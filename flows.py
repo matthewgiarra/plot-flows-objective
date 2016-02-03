@@ -93,6 +93,14 @@ def Parse_Vector_2d(xy):
     x = xy[0 : breakpoint];
     y = xy[breakpoint : num_points];
     return x, y;
+    
+def Get_Pathline(xy, k = 0):
+    num_points = int(xy.shape[1] / 2);
+    x = xy[:, k];
+    y = xy[:, k + num_points];
+    
+    return x, y
+    
 
 # Vectorize means make this work element-wise
 # @np.vectorize  
@@ -124,9 +132,10 @@ def HamaVelocity(xy, t, my_args):
     # Wave velocity (unity in the paper)
     c = my_args[2];
     
-    # Coordinates
-    x = xy[0];
-    y = xy[1];
+    # pdb.set_trace();
+    
+    # Parse the input
+    x, y = Parse_Vector_2d(xy);
     
     # Mean horizontal and vertical velocities
     u_o = 1 + np.tanh(y);
@@ -140,10 +149,13 @@ def HamaVelocity(xy, t, my_args):
     
     # Add steady and unsteady velocities
     u_vel = u_o + u_prime;
-    v_vel = v_o + v_prime
+    v_vel = v_o + v_prime;
+    
+    # Append into 1D
+    vels = np.append(u_vel, v_vel);
     
     # Concatonate into a list
-    return [u_vel.astype(float), v_vel.astype(float)];
+    return vels;
     
 def UniformVelocity(xy, t, my_args):
     
@@ -166,6 +178,9 @@ def UniformVelocity(xy, t, my_args):
     
 def plot_pathlines(flow_type = None, t = [0], y0 = [0], my_args = None):
     if flow_type is not None:
+        
+        fig = plt.figure();
+        
         if "hama" in flow_type.lower():
             # Extract the constants related to the Hama flow
                         
@@ -173,30 +188,25 @@ def plot_pathlines(flow_type = None, t = [0], y0 = [0], my_args = None):
                         
             # Integrate
             xy = odeint(HamaVelocity, y0 = y0, t = t, args = my_args);
+            ax = plt.axes(xlim=(-1, 9), ylim=(-2.0, 2.0))
             
-            fig = plt.figure();
-            ax = plt.axes(xlim=(-1, 9), ylim=(-1.0, 1.0))
-            for k in range(len(xy)):
-                print("Figure: " + str(k));
-                ax.plot(xy[k][0], xy[k][1], '.k');
-            plt.show(ax) 
             
         elif "uniform" in flow_type.lower():
             
             xy = odeint(UniformVelocity, y0 = y0, t = t, args = my_args);
-
-            fig = plt.figure();
-            ax = plt.axes(xlim=(-1, 9), ylim=(-1, 1))
+            ax = plt.axes(xlim=(-1, 9), ylim=(-2, 2))
+            
+        # Count number of path lines
+        num_pathlines = int(xy.shape[1] / 2);
         
-            pdb.set_trace();
-        
-            for k in range(len(xy)):
-                print("Figure: " + str(k));
-                x, y = Parse_Vector_2d(xy[k, :]);
-                ax.plot(x, y, '.k');
-                
-            plt.show(ax)
-                
+        # Do the plotting
+        for k in range(num_pathlines):
+            print("Figure: " + str(k));
+            x, y = Get_Pathline(xy, k);
+            ax.plot(x, y, '-k');
+            
+        plt.show(ax)
+            
             
             # Make a plot
             # plt.plot(xy, '.');

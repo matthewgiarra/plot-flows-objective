@@ -48,33 +48,28 @@ t = np.linspace(t0, tf, num = n_steps)
 # amplitude a
 # wave number alpha
 # wave speed c
-a = 0.2;
+a = 0.05;
 alpha = 1.0;
-c = 1.0;
+c = 1;
 
 # Input arguments to the hama flow.
-# input_args = ([a, alpha, c], );
+input_args_hama = ([a, alpha, c], );
 
 vel = 1;
 
-input_args = (vel,);
+input_args_uniform = (vel,);
 
 
 
-uv = UniformVelocity(xy = y0, t = t[0], my_args = vel);
+# uv = UniformVelocity(xy = y0, t = t[0], my_args = vel);
 
-output_len = len(uv);
-
-breakpoint = int(output_len / 2);
-u_vel = uv[0 : breakpoint];
-v_vel = uv[breakpoint : output_len];
 
 # pdb.set_trace();
 
 # Plot the pathlines
-plot_pathlines(flow_type = "uniform", t = t, y0 = y0, my_args = input_args);
-# plot_pathlines(flow_type = "test", t = t, y0 = y0, my_args = (input_args,));
-# uv = HamaVelocity(xy = y0, t = t, my_args = input_args);
+# plot_pathlines(flow_type = "uniform", t = t, y0 = y0, my_args = input_args_uniform);
+plot_pathlines(flow_type = "hama", t = t, y0 = y0, my_args = input_args_hama);
+# uv = HamaVelocity(xy = y0, t = t[0], my_args = [a, alpha, c]);
 
 
 
