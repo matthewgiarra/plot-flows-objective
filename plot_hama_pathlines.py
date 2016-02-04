@@ -37,6 +37,7 @@ y0 = np.append(xv, yv);
 # Initial and final times
 t0 = 0;
 tf = 10;
+dt = 0.1;
 
 # Number of time steps
 n_steps = 100;
@@ -53,13 +54,18 @@ alpha = 1.0;
 c = 1;
 
 # Input arguments to the hama flow.
-input_args_hama = ([a, alpha, c], );
+input_args_hama = [a, alpha, c];
 
 vel = 1;
 
-input_args_uniform = (vel,);
+input_args_uniform = vel;
 
+m = Particle();
+m.Update("hama", t0 = t0, dt = dt, input_args = input_args_hama);
 
+pdb.set_trace();
+
+print("Hellow!")
 
 # uv = UniformVelocity(xy = y0, t = t[0], my_args = vel);
 
@@ -68,7 +74,7 @@ input_args_uniform = (vel,);
 
 # Plot the pathlines
 # plot_pathlines(flow_type = "uniform", t = t, y0 = y0, my_args = input_args_uniform);
-plot_pathlines(flow_type = "hama", t = t, y0 = y0, my_args = input_args_hama);
+# plot_pathlines(flow_type = "hama", t = t, y0 = y0, my_args = input_args_hama);
 # uv = HamaVelocity(xy = y0, t = t[0], my_args = [a, alpha, c]);
 
 

@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 import pdb
+import itertools
+import time
 
 
 """
@@ -39,53 +41,29 @@ Flow
 # Define pi
 pi = np.pi;
 
+# Counter
+particle_counter = itertools.count();
+iter_counter = itertools.count();
+
 class Velocity:
-    def __init__(self, U = None, V = None, W = None):
+    def __init__(self, U = 0.0, V = 0.0, W = 0.0):
         self.U = U;
         self.V = V;
         self.W = W;
+        
+        
+class Position:
+    def __init__(self, X = 0.0, Y = 0.0, Z = 0.0):
+        
+        # Updateable particle coordinates
+        self.X = X;
+        self.Y = Y;
+        self.Z = Z;
+        
+        # Particle origin.
+        # This is where the particle was created.
+        self.Origin = (X, Y, Z);
 
-class Domain:
-    def __init__(self, X = None, Y = None, Z = None):
-        if X is not None and (type(X) is list or type(X) is tuple) and len(X) == 3:
-                xv = np.linspace(X[0], X[1], X[2]);
-        else:
-            xv = 0;
-            
-        if Y is not None and (type(Y) is list or type(Y) is tuple) and len(Y) == 3:
-            yv = np.linspace(Y[0], Y[1], Y[2]);
-        else:
-            yv = 0;
-            
-        if Z is not None and (type(Z) is list or type(Z) is tuple) and len(Z) == 3:
-            zv = np.linspace(Z[0], Z[1], Z[2]);
-        else:
-            zv = 0;
-        
-       
-        # Form the matrix of coordinates
-        xm, ym, zm = np.meshgrid(xv, yv, zv);
-        
-        # Assign outputs
-        self.X = xm;
-        self.Y = ym;
-        self.Z = zm;
-            
-class Flow:
-    def __init__(self, Flow_Type = None):
-        
-        if Flow_Type is None:
-            print("Error: Specify a flow type!")
-            return;
-        
-        # Allocate a domain        
-        self.Domain = Domain();
-        
-        # Allocate a velocity object
-        self.Velocity = Velocity();
-        
-        # Save the flow type
-        self.FlowType = Flow_Type.lower();
 
 def Parse_Vector_2d(xy):
     num_points = len(xy);
@@ -100,7 +78,379 @@ def Get_Pathline(xy, k = 0):
     y = xy[:, k + num_points];
     
     return x, y
+
+# Extents of a domain
+class Domain:
+    def __init__(self, x = (0, 0), y = (0, 0), z = (0, 0)):
+        self.X = x;
+        self.Y = y;
+        self.Z = z;
+
+
+# Timing. Probably need to make this iterable.
+class Time:
+    def __init__(self, start = 0, stop = np.inf, step = 0.1):
+        self.Start = start;
+        self.Stop = stop;
+        self.Step = step;
+        self.Current = start;
+
+# Parameters for the simulation
+class Parameters:
+    def __init__(self, plot_type = None,
+                flow_type = None,
+                extra_args = None,
+                periodic_domain = True):
+        self.PlotType = plot_type;
+        self.FlowType = flow_type;
+        self.ExtraArgs = extra_args;
+        self.PeriodicDomain = True;
+        self.RegenerateParticles = True;
+        
+        # Set options for the different types of plots
+        if "streak" in plot_type.lower():
+            self.PeriodicDomain = False;
+            self.RegenerateParticles = False;
+
+# A flow simulation.
+class Simulation:
+    def __init__(self, x_domain = (-1,1), y_domain = (-1, 1), z_domain = (-1, 1), 
+                                    y0 = [[0,], [0,], [0,]], time = [0, np.inf, 0.1], 
+                                    flow_type = None, plot_type = "streak", extra_args = None):
+            
+            # Define the extents of the domain
+            domain = Domain(x_domain, y_domain, z_domain);
+            
+            # Assign the domain to the simulation
+            self.Domain = domain;
+            
+            # Some simulation parameters
+            self.Parameters = Parameters(plot_type = plot_type,
+                                        flow_type = flow_type,
+                                        extra_args = extra_args);
+
+            # Parse the particle positions
+            x = y0[0];
+            y = y0[1];
+            z = y0[2];
+
+            # Create a particle field
+            field = ParticleField(x, y, z);
+            
+            # Assign the field to the simulation;
+            self.ParticleField = field;
+            
+            # Assign the initial time and the time step
+            start_time = time[0];
+            stop_time  = time[1];
+            step_time  = time[2];
+            
+            # Make the time object
+            time = Time(start_time, stop_time, step_time);
+            
+            # Assign the time object to the simulation
+            self.Time = time;
+            
+    # Run the simulation
+    def Run(self, make_plots = True):
+        current_time = self.Time.Current;
+        stop_time = self.Time.Stop;
+        
+        # plt.ion();
+        
+        # if make_plots:
+        fig = plt.figure();
+        ax = fig.add_subplot(111);
+        line1, = ax.plot([], [], '.k');
+        fig.show();
+        
+       
+        
+        # Run while the current time is
+        # less than the stopping time
+        try:
+            while current_time < stop_time:
+                # Make a counter
+                counter = next(iter_counter);
+                print("On iteration " + str(counter));
+                self.Step();
+            
+                # Make the plots
+                if make_plots:
+                    xplot, yplot, zplot = self.ParticleField.GetCoordinates();
+                    line1.set_xdata(xplot);
+                    line1.set_ydata(yplot);
+                    ax.set_xlim([-2, 2]);
+                    ax.set_ylim([-2, 2]);
+                    fig.canvas.draw();
+                    time.sleep(0.1)
+        except KeyboardInterrupt:
+            pass
+                
+            # pdb.set_trace();
+                    
+            
     
+    # This iterates the simulation        
+    def Step(self):
+        
+        # Starting time of the iteration
+        t0 = self.Time.Current;
+        dt = self.Time.Step;
+        
+        # Advect the particles
+        self.ParticleField.Advect(flow_type = self.Parameters.FlowType, t0 = t0, dt = dt, extra_args = self.Parameters.ExtraArgs);
+        
+        # Remove the dead particles
+        # and add some more back in
+        self.CircleOfLife();
+        
+        # Increment the time counter
+        self.Time.Current += dt;
+
+            
+    # Check if particles are within the domain
+    # Kill them if they aren't     
+    def CircleOfLife(self):
+        
+        # Read some options
+        periodic_domain = self.Parameters.PeriodicDomain;
+        
+        # Read in the domain
+        x_domain = self.Domain.X;
+        y_domain = self.Domain.Y;
+        z_domain = self.Domain.Z;
+        
+        # Count the number of particles
+        num_particles = self.ParticleField.Count;
+        
+        # Allocate space for new particle positions
+        x_new = [];
+        y_new = [];
+        z_new = [];
+        
+        # Loop over the particles
+        for k in range(num_particles):
+            
+            x = self.ParticleField.Particles[k].Position.X;
+            y = self.ParticleField.Particles[k].Position.Y;
+            z = self.ParticleField.Particles[k].Position.Z;
+            
+            x_out = not(x_domain[0] <= x <= x_domain[1]);
+            y_out = not(y_domain[0] <= y <= y_domain[1]);
+            z_out = not(z_domain[0] <= z <= z_domain[1]);
+            
+            # Kill the particle if it's outside the range
+            if x_out or y_out or z_out:
+                
+                # This flags the particle as dead,
+                # but doesn't remove it from the
+                # particle field yet. That part
+                # is handled by ParticleField.RemoveDead()
+                self.ParticleField.Particles[k].Kill();
+                
+                
+                # This is for periodic domains:
+                # the new particle will be generated
+                # on the face opposite to where
+                # it exited the domain
+                
+                if periodic_domain is True:
+                    # Figure out which edge of the domain 
+                    # the particle exited through, and 
+                    # set the new particle starting position
+                    # opposite that face. 
+                    #
+                    # Check X faces
+                    if x_out:
+                        if x < x_domain[0]:
+                            x = x_domain[1];
+                        else:
+                            x = x_domain[0];
+                
+                    # Check Y faces
+                    if y_out:
+                        if y < y_domain[0]:
+                            y = y_domain[1];
+                        else:
+                            y = y_domain[0];
+                        
+                    # Check Z faces
+                    if z_out:
+                        if z < z_domain[0]:
+                            z = z_domain[1];
+                        else:
+                            z = z_domain[0];
+                else:
+                    particle_origin = self.ParticleField.Particles[k].Position.Origin;
+                    x = particle_origin[0];
+                    y = particle_origin[1];
+                    z = particle_origin[2];
+                        
+                # Append the new positions to the list      
+                x_new.append(x);
+                y_new.append(y);
+                z_new.append(z);
+                
+        # Remove the dead particles
+        self.ParticleField.RemoveDead();
+        
+        # Make new particles
+        self.ParticleField.CreateParticles(x_new, y_new, z_new);
+            
+
+class ParticleField:
+    def __init__(self, x = [0,], y = [0,], z = [0,]):
+        
+        # Number of particles to create
+        num_particles = np.min([len(x), len(y), len(z)]);
+        
+        # Create the particles     
+        Particles = [Particle(x[count], y[count], z[count]) 
+                        for count in range(num_particles)];
+        
+        # Assign the field
+        self.Particles = Particles;
+        
+        # Count the number of particles
+        self.Count = num_particles;
+        
+        # Count the alive particles
+        self.Alive = num_particles;
+        
+        # Count dead particles
+        self.Dead = 0;
+     
+    # Update all the particles in the list    
+    def Advect(self, flow_type = None, t0 = 0, dt = 0, extra_args = None):
+        
+        if flow_type is not None:
+            
+            # Number of particles
+            num_particles = len(self.Particles);
+            
+            # Loop over all the particles
+            for k in range(num_particles):
+                self.Particles[k].Advect(flow_type = flow_type,
+                                            t0 = t0, dt = dt, 
+                                            extra_args = extra_args);
+    
+                
+    # Remove dead particles
+    def RemoveDead(self):
+        # Update the number of particles to start
+        self.Count = len(self.Particles);
+        
+        # Loop over particles    
+        for k in range(self.Count - 1, -1, -1):
+            if self.Particles[k].Alive is False:
+                del self.Particles[k];
+                
+        # Update the number of particles
+        self.Count = len(self.Particles);
+    
+    # Make new particles
+    def CreateParticles(self, x = [0, ], y = [0, ], z = [0, ]):
+        
+        # New particle field
+        new_field = ParticleField(x, y, z);
+        
+        # Extend the particle list
+        self.Particles.extend(new_field.Particles);
+        
+        # Update the count
+        self.Count = len(self.Particles);
+        
+    # Kill particles
+    def KillParticles(self, inds = None):
+        if inds is not None:
+            num_particles = self.Count;
+            
+            # Set particles to dead
+            for k in inds:
+                self.Particles[k].Kill;     
+        
+            # Clean up the list
+            self.RemoveDead();
+    
+    # This function reads the coordinates of all of the particles.        
+    def GetCoordinates(self):
+        
+        # Count the particles
+        num_particles = self.Count;
+        
+        # Initialize positions
+        x = [];
+        y = [];
+        z = [];
+        
+        # Loop over all the particles
+        for k in range(num_particles):
+            x.append(self.Particles[k].Position.X);
+            y.append(self.Particles[k].Position.Y);
+            z.append(self.Particles[k].Position.Z);
+        
+        # Return the vectors    
+        return x, y, z
+    
+class Particle:
+    def __init__(self, x = 0.0, y = 0.0, z = 0.0, u = 0.0, v = 0.0, w = 0.0):
+        
+        # Velocity
+        vel = Velocity(u, v, w);
+        self.Velocity = vel;
+        
+        # Position
+        pos = Position(x, y, z);
+        self.Position = pos;
+        
+        # Alive flag
+        self.Alive = True;
+        
+        # Set the ID
+        self.ID = next(particle_counter);
+    
+    # Update particle position based on some velocity field    
+    def Advect(self, flow_type = None, t0 = 0.0, dt = 0.0, extra_args = None):
+        if flow_type is not None:
+            x0 = self.Position.X;
+            y0 = self.Position.Y;
+            z0 = self.Position.Z;
+            
+            # Final time
+            tf = t0 + dt;
+            
+            # Time vector
+            t = np.array([t0, tf]);
+            
+            # Initial positions as a numpy vector,
+            # in the form compatible with the velocity functions.
+            xy0 = np.array([x0, y0]);
+            
+            # Choose between velocity fields
+            if "hama" in flow_type.lower():
+                
+                # New position
+                try:
+                    xy = (odeint(HamaVelocity, y0 = xy0, t = t, args = (extra_args,)))[1, :];
+                except:
+                    print("Error integrating!");
+                    
+                # Extract the new positions
+                self.Position.X = xy[0];
+                self.Position.Y = xy[1];
+                
+                # New velocity
+                uv = HamaVelocity(xy, t, extra_args)
+                
+                # Extract the new velocities
+                self.Velocity.U = uv[0];
+                self.Velocity.V = uv[1];
+                
+    # Kill particles
+    def Kill(self):
+        self.Alive = False;
+                
 
 # Vectorize means make this work element-wise
 # @np.vectorize  
@@ -121,16 +471,16 @@ def PoiseuilleVelocity(xy, t, args1):
     # Return u and v
     return [u_vel.astype(float), v_vel.astype(float)];
     
-def HamaVelocity(xy, t, my_args):
+def HamaVelocity(xy, t, extra_args):
 
     # Amplitude (0.2 seems to work)
-    a = my_args[0];
+    a = extra_args[0];
     
     # Wave number (unity in the paper)
-    alpha = my_args[1]
+    alpha = extra_args[1]
     
     # Wave velocity (unity in the paper)
-    c = my_args[2];
+    c = extra_args[2];
     
     # pdb.set_trace();
     
@@ -157,7 +507,7 @@ def HamaVelocity(xy, t, my_args):
     # Concatonate into a list
     return vels;
     
-def UniformVelocity(xy, t, my_args):
+def UniformVelocity(xy, t, extra_args):
     
     # Parse the input
     x, y = Parse_Vector_2d(xy);
@@ -165,7 +515,7 @@ def UniformVelocity(xy, t, my_args):
     num_points = len(x);
     
     # Velocity
-    u_o = my_args * np.ones((num_points,), dtype = np.float);
+    u_o = extra_args * np.ones((num_points,), dtype = np.float);
     v_o = 0 * np.ones((num_points,), dtype = np.float);
     
     u_vel = u_o;
@@ -175,6 +525,28 @@ def UniformVelocity(xy, t, my_args):
     
     return vels;
          
+def plot_streaklines(flow_type = None, t = [0], y0 = [0], my_args = None):
+    if flow_type is not None:
+        
+        # Size of the time step
+        time_step_size = 0.1;
+        
+        # Number of flow tracer sources
+        num_sources = int(len(y0) / 2);
+        
+        
+        
+        # List of X coordinates of all the particles
+        # that will be tracked
+        
+        
+        # Allocate all of the coordinate positions
+        # so we don't have to re-allocate memory all the time
+                    
+            
+
+
+
     
 def plot_pathlines(flow_type = None, t = [0], y0 = [0], my_args = None):
     if flow_type is not None:
@@ -187,13 +559,13 @@ def plot_pathlines(flow_type = None, t = [0], y0 = [0], my_args = None):
             # pdb.set_trace();
                         
             # Integrate
-            xy = odeint(HamaVelocity, y0 = y0, t = t, args = my_args);
+            xy = odeint(HamaVelocity, y0 = y0, t = t, args = (my_args,));
             ax = plt.axes(xlim=(-1, 9), ylim=(-2.0, 2.0))
             
             
         elif "uniform" in flow_type.lower():
             
-            xy = odeint(UniformVelocity, y0 = y0, t = t, args = my_args);
+            xy = odeint(UniformVelocity, y0 = y0, t = t, args = (my_args,));
             ax = plt.axes(xlim=(-1, 9), ylim=(-2, 2))
             
         # Count number of path lines
@@ -206,14 +578,7 @@ def plot_pathlines(flow_type = None, t = [0], y0 = [0], my_args = None):
             ax.plot(x, y, '-k');
             
         plt.show(ax)
-            
-            
-            # Make a plot
-            # plt.plot(xy, '.');
-            # plt.show();
-
-
-
+        
 
 
 
