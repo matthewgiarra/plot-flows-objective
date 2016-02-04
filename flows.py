@@ -1,10 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
+from scipy import interpolate
 import pdb
 import itertools
 import time
-
 
 """
 flows.py
@@ -100,12 +100,13 @@ class Parameters:
     def __init__(self, plot_type = None,
                 flow_type = None,
                 extra_args = None,
-                periodic_domain = True):
+                periodic_domain = True, NewParticleDistance = 0.5):
         self.PlotType = plot_type;
         self.FlowType = flow_type;
         self.ExtraArgs = extra_args;
         self.PeriodicDomain = True;
         self.RegenerateParticles = True;
+        self.NewParticleDistance = NewParticleDistance;
         
         # Set options for the different types of plots
         if "streak" in plot_type.lower():
@@ -116,7 +117,8 @@ class Parameters:
 class Simulation:
     def __init__(self, x_domain = (-1,1), y_domain = (-1, 1), z_domain = (-1, 1), 
                                     y0 = [[0,], [0,], [0,]], time = [0, np.inf, 0.1], 
-                                    flow_type = None, plot_type = "streak", extra_args = None):
+                                    flow_type = None, plot_type = "streak", 
+                                    NewParticleDistance = 0.5, extra_args = None):
             
             # Define the extents of the domain
             domain = Domain(x_domain, y_domain, z_domain);
@@ -127,7 +129,8 @@ class Simulation:
             # Some simulation parameters
             self.Parameters = Parameters(plot_type = plot_type,
                                         flow_type = flow_type,
-                                        extra_args = extra_args);
+                                        extra_args = extra_args, 
+                                        NewParticleDistance = NewParticleDistance);
 
             # Parse the particle positions
             x = y0[0];
@@ -162,6 +165,10 @@ class Simulation:
         current_time = self.Time.Current;
         stop_time = self.Time.Stop;
         
+        # Get domain
+        xd = list(self.Domain.X);
+        yd = list(self.Domain.Y);
+        
         # if make_plots:
         fig = plt.figure();
         ax = fig.add_subplot(111);
@@ -191,10 +198,15 @@ class Simulation:
                     # line1.set_ydata(y_streak[0]);
                     ax.clear();
                     for n in range(n_streaks):
-                        ax.plot(x_streak[n], y_streak[n], '-k');
+
+                        # Number of points in this streakline
+                        npoints = len(x_streak[n]);
+
+                        # Plot this streak line
+                        ax.plot(x_streak[n], y_streak[n], '-');
                     
                     # pdb.set_trace();
-                    ax.set_xlim([0, 8]);
+                    ax.set_xlim(xd);
                     ax.set_ylim([-2, 2]);
                     fig.canvas.draw();
                     time.sleep(0.01)
@@ -343,12 +355,43 @@ class Simulation:
         # if it's a streak plot
         if "streak" in plot_type.lower():
             print("Make new particle!")
-            x_new = self.InitialPositions.X;
-            y_new = self.InitialPositions.Y;
-            z_new = self.InitialPositions.Z;
+            
+            # Number of streakline starting points.
+            num_pos = len(self.InitialPositions.X);
+            
+            # Get the coordinates of all of the
+            # streakline starting points.
+            x_init = self.InitialPositions.X;
+            y_init = self.InitialPositions.Y;
+            z_init = self.InitialPositions.Z;
+            
+            # Loop over the injection points
+            for n in range(num_pos):
+                
+                # Read the startign position of
+                # the n'th streak injection point
+                y0 = (x_init[n], y_init[n], z_init[n]);
+                
+                # Extract the streakline
+                xs, ys, zs, ds = self.GetStreakline(y0);
+            
+            
+                # Components of the vector from the origin
+                dx = xs[0] - x_init[n];
+                dy = ys[0] - y_init[n];
+                dz = zs[0] - z_init[n];
+                
+                # Distance of the particle from the origin
+                dr = np.sqrt(dx**2 + dy**2 + dz**2);
+                
+                # Create a new particle if the previous particle
+                # has moved far enough away from its origin.
+                if dr > self.Parameters.NewParticleDistance:
+                    self.ParticleField.CreateParticles([x_init[n],], [y_init[n],], [z_init[n],]);
+            
             
             # Make the new particles
-            self.ParticleField.CreateParticles(x_new, y_new, z_new);
+            # self.ParticleField.CreateParticles(x_new, y_new, z_new);
         
         # Remove the dead particles
         self.ParticleField.RemoveDead();
@@ -389,7 +432,7 @@ class Simulation:
     # This function gets the coordinates of all of the
     # particles that started at a certain point, 
     # i.e., a streakline.  
-    def GetStreakline(self, y0 = (0, 0, 0)):
+    def GetStreakline(self, y0 = (0, 0, 0), smooth = False, num_smooth_points = 100):
         # Read the number of particles
         
         # Number of particles
@@ -419,14 +462,29 @@ class Simulation:
                 durations.append(durations_new);
                 
         # Now sort them by age
-        x_streak = [k for (durations, k) in sorted(zip(durations, x))];
-        y_streak = [k for (durations, k) in sorted(zip(durations, y))];
-        z_streak = [k for (durations, k) in sorted(zip(durations, z))];
-        durations_streak = sorted(durations);
+        xs = [k for (durations, k) in sorted(zip(durations, x))];
+        ys = [k for (durations, k) in sorted(zip(durations, y))];
+        zs = [k for (durations, k) in sorted(zip(durations, z))];
+        ds = sorted(durations);
+        
+        # Smoothing
+        if smooth is True:
+            
+            if len(xs) > 3:
+                # pdb.set_trace();
+                tck_x = interpolate.splrep(ds, xs, s = 0);
+                tck_y = interpolate.splrep(ds, ys, s = 0);
+                tck_z = interpolate.splrep(ds, zs, s = 0);
+                dur_new = np.linspace(min(ds), max(ds), num_smooth_points);
+            
+                xs = interpolate.splev(dur_new, tck_x, der = 0);
+                ys = interpolate.splev(dur_new, tck_y, der = 0);
+                zs = interpolate.splev(dur_new, tck_z, der = 0)
+                ds = dur_new;
         
         # Return the coordinates and durations (the ages)
         # of the points on the streakline, sorted by duration.
-        return x_streak, y_streak, z_streak, durations_streak
+        return xs, ys, zs, ds
         
 
 class ParticleField:
@@ -590,11 +648,12 @@ class Particle:
                 self.Position.Y = xy[1];
                 
                 # New velocity
-                uv = HamaVelocity(xy, t, extra_args)
-                
+                uv = HamaVelocity(xy0, t, extra_args)
+
                 # Extract the new velocities
                 self.Velocity.U = uv[0];
                 self.Velocity.V = uv[1];
+                
                 
     # Kill particles
     def Kill(self):

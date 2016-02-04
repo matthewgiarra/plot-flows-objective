@@ -12,13 +12,13 @@ z = list(np.linspace(0, 0, num_particles));
 # Make them a vector
 y0 = [x, y, z];
 
-a = 0.02;
+a = 0.05;
 alpha = 1;
 c = 1;
 
 # Domain
-xd = (-1.1, 8.0);
-yd = (-1.1, 1.1);
+xd = (-1.1, 24.0);
+yd = (-5, 5);
 zd = (-1, 1);
 
 # Hama flow constants
@@ -30,8 +30,11 @@ plot_type = "streak";
 # Flow type
 flow_type = "hama";
 
+# New particle distance
+NewParticleDistance = 0.5;
+
 # Time stuff
-sim_time = [0, np.inf, 0.5];
+sim_time = [0, np.inf, 0.1];
 
 sim = flows.Simulation(x_domain = xd, 
                         y_domain = yd,
@@ -40,6 +43,7 @@ sim = flows.Simulation(x_domain = xd,
                         flow_type = flow_type, 
                         plot_type = plot_type,
                         time = sim_time, 
+                        NewParticleDistance = NewParticleDistance,
                         extra_args = extra_args);
   
 # Run the simulation                                
