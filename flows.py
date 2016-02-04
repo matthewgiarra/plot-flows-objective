@@ -64,7 +64,6 @@ class Position:
         # This is where the particle was created.
         self.Origin = (X, Y, Z);
 
-
 def Parse_Vector_2d(xy):
     num_points = len(xy);
     breakpoint = int(num_points / 2);
@@ -203,7 +202,7 @@ class Simulation:
                         npoints = len(x_streak[n]);
 
                         # Plot this streak line
-                        ax.plot(x_streak[n], y_streak[n], '-');
+                        ax.plot(x_streak[n], y_streak[n], '.');
                     
                     # pdb.set_trace();
                     ax.set_xlim(xd);
@@ -513,20 +512,37 @@ class ParticleField:
         # Count dead particles
         self.Dead = 0;
      
-    # Update all the particles in the list    
     def Advect(self, flow_type = None, t0 = 0, dt = 0, extra_args = None):
-        
+
         if flow_type is not None:
-            
+    
             # Number of particles
             num_particles = len(self.Particles);
-            
-            # Loop over all the particles
-            for k in range(num_particles):
-                self.Particles[k].Advect(flow_type = flow_type,
-                                            t0 = t0, dt = dt, 
-                                            extra_args = extra_args);
+        
+            # Get the positions of all of the particles
+            x0, y0, z0 = self.GetCoordinates();
+        
+            # Time vector
+            tf = t0 + dt;
+        
+            # Time vector
+            t = np.array([t0, tf]);
+        
+            # Initial positions as a numpy vector
+            # in the form compatible with the 
+            # velocity functions
+            xy0 = np.array(x0 + y0);
+            # xy0 = np.array([x0, y0]);
     
+            # Choose between fields
+            if "hama" in flow_type.lower():
+                xy = (odeint(HamaVelocity, y0 = xy0, t = t, args = (extra_args,)))[-1, :];
+            
+            # Extract the new positions
+            x_new, y_new = Parse_Vector_2d(xy);
+            
+            # Set the new coordinates
+            self.SetCoordinates(x = x_new, y = y_new);    
                 
     # Remove dead particles
     def RemoveDead(self):
@@ -584,6 +600,23 @@ class ParticleField:
         
         # Return the vectors    
         return x, y, z
+    
+    # This function sets the coordinates of all the particles in a field
+    # as the values of some vectors x_new, y_new, z_new    
+    def SetCoordinates(self, x = None, y = None, z = None):
+        
+        # Read number of particles
+        num_particles = self.Count;
+        
+        # Loop over all the particles
+        for k in range(num_particles):
+            if x is not None:
+                self.Particles[k].Position.X = x[k];
+            if y is not None:
+                self.Particles[k].Position.Y = y[k];
+            if z is not None:
+                self.Particles[k].Position.Z = z[k];
+            
         
     # This function increases
     # the ages of all the particles
@@ -653,8 +686,7 @@ class Particle:
                 # Extract the new velocities
                 self.Velocity.U = uv[0];
                 self.Velocity.V = uv[1];
-                
-                
+    
     # Kill particles
     def Kill(self):
         self.Alive = False;

@@ -31,7 +31,7 @@ plot_type = "streak";
 flow_type = "hama";
 
 # New particle distance
-NewParticleDistance = 0.5;
+NewParticleDistance = 0.1;
 
 # Time stuff
 sim_time = [0, np.inf, 0.1];
