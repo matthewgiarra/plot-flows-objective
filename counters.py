@@ -2,7 +2,7 @@ import flows
 import numpy as np
 import pdb
 
-num_particles = 40;
+num_particles = 5;
 
 # Coordinates
 x = list(np.linspace(0, 0, num_particles));

@@ -133,6 +133,9 @@ class Simulation:
             x = y0[0];
             y = y0[1];
             z = y0[2];
+            
+            # Initial positions of the particles
+            self.InitialPositions = Position(x, y, z);
 
             # Create a particle field
             field = ParticleField(x, y, z);
@@ -156,20 +159,16 @@ class Simulation:
         current_time = self.Time.Current;
         stop_time = self.Time.Stop;
         
-        # plt.ion();
-        
         # if make_plots:
         fig = plt.figure();
         ax = fig.add_subplot(111);
         line1, = ax.plot([], [], '.k');
         fig.show();
         
-       
-        
         # Run while the current time is
         # less than the stopping time
         try:
-            while current_time < stop_time:
+            while current_time < stop_time and (self.ParticleField.Count) > 0:
                 # Make a counter
                 counter = next(iter_counter);
                 print("On iteration " + str(counter));
@@ -183,13 +182,9 @@ class Simulation:
                     ax.set_xlim([-2, 2]);
                     ax.set_ylim([-2, 2]);
                     fig.canvas.draw();
-                    time.sleep(0.1)
+                    time.sleep(0.01)
         except KeyboardInterrupt:
             pass
-                
-            # pdb.set_trace();
-                    
-            
     
     # This iterates the simulation        
     def Step(self):
@@ -199,7 +194,8 @@ class Simulation:
         dt = self.Time.Step;
         
         # Advect the particles
-        self.ParticleField.Advect(flow_type = self.Parameters.FlowType, t0 = t0, dt = dt, extra_args = self.Parameters.ExtraArgs);
+        self.ParticleField.Advect(flow_type = self.Parameters.FlowType,
+        t0 = t0, dt = dt, extra_args = self.Parameters.ExtraArgs);
         
         # Remove the dead particles
         # and add some more back in
@@ -208,13 +204,18 @@ class Simulation:
         # Increment the time counter
         self.Time.Current += dt;
 
-            
-    # Check if particles are within the domain
-    # Kill them if they aren't     
+    # This method creates and destroys particles
+    # between time steps.
     def CircleOfLife(self):
         
         # Read some options
         periodic_domain = self.Parameters.PeriodicDomain;
+        regenerate_particles = self.Parameters.RegenerateParticles;
+        
+        # Flow type
+        flow_type = self.Parameters.FlowType;
+        # Plot type
+        plot_type = self.Parameters.PlotType;
         
         # Read in the domain
         x_domain = self.Domain.X;
@@ -232,10 +233,13 @@ class Simulation:
         # Loop over the particles
         for k in range(num_particles):
             
+            # Read particle positions
             x = self.ParticleField.Particles[k].Position.X;
             y = self.ParticleField.Particles[k].Position.Y;
             z = self.ParticleField.Particles[k].Position.Z;
             
+            # Determine whether the particle left the
+            # domain on each face.
             x_out = not(x_domain[0] <= x <= x_domain[1]);
             y_out = not(y_domain[0] <= y <= y_domain[1]);
             z_out = not(z_domain[0] <= z <= z_domain[1]);
@@ -249,55 +253,67 @@ class Simulation:
                 # is handled by ParticleField.RemoveDead()
                 self.ParticleField.Particles[k].Kill();
                 
+                # Check if particles should be regenerated.
+                if regenerate_particles is True:
                 
-                # This is for periodic domains:
-                # the new particle will be generated
-                # on the face opposite to where
-                # it exited the domain
+                    # This is for periodic domains:
+                    # the new particle will be generated
+                    # on the face opposite to where
+                    # it exited the domain
                 
-                if periodic_domain is True:
-                    # Figure out which edge of the domain 
-                    # the particle exited through, and 
-                    # set the new particle starting position
-                    # opposite that face. 
-                    #
-                    # Check X faces
-                    if x_out:
-                        if x < x_domain[0]:
-                            x = x_domain[1];
-                        else:
-                            x = x_domain[0];
+                    if periodic_domain is True:
+                        # Figure out which edge of the domain 
+                        # the particle exited through, and 
+                        # set the new particle starting position
+                        # opposite that face. 
+                        #
+                        # Check X faces
+                        if x_out:
+                            if x < x_domain[0]:
+                                x = x_domain[1];
+                            else:
+                                x = x_domain[0];
                 
-                    # Check Y faces
-                    if y_out:
-                        if y < y_domain[0]:
-                            y = y_domain[1];
-                        else:
-                            y = y_domain[0];
+                        # Check Y faces
+                        if y_out:
+                            if y < y_domain[0]:
+                                y = y_domain[1];
+                            else:
+                                y = y_domain[0];
                         
-                    # Check Z faces
-                    if z_out:
-                        if z < z_domain[0]:
-                            z = z_domain[1];
-                        else:
-                            z = z_domain[0];
-                else:
-                    particle_origin = self.ParticleField.Particles[k].Position.Origin;
-                    x = particle_origin[0];
-                    y = particle_origin[1];
-                    z = particle_origin[2];
+                        # Check Z faces
+                        if z_out:
+                            if z < z_domain[0]:
+                                z = z_domain[1];
+                            else:
+                                z = z_domain[0];
+                    else:
+                        particle_origin = self.ParticleField.Particles[k].Position.Origin;
+                        x = particle_origin[0];
+                        y = particle_origin[1];
+                        z = particle_origin[2];
                         
-                # Append the new positions to the list      
-                x_new.append(x);
-                y_new.append(y);
-                z_new.append(z);
-                
+                    # Append the new positions to the list      
+                    x_new.append(x);
+                    y_new.append(y);
+                    z_new.append(z);
+                    
+                    # Make new particles
+                    self.ParticleField.CreateParticles(x_new, y_new, z_new);       
+        
+        # Put new particles at the streakline injection
+        # if it's a streak plot
+        if "streak" in plot_type.lower():
+            x_new = self.InitialPositions.X;
+            y_new = self.InitialPositions.Y;
+            z_new = self.InitialPositions.Z;
+            
+            # Make the new particles
+            self.ParticleField.CreateParticles(x_new, y_new, z_new);
+        
         # Remove the dead particles
         self.ParticleField.RemoveDead();
-        
-        # Make new particles
-        self.ParticleField.CreateParticles(x_new, y_new, z_new);
-            
+             
 
 class ParticleField:
     def __init__(self, x = [0,], y = [0,], z = [0,]):
