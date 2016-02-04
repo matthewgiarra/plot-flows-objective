@@ -165,7 +165,7 @@ class Simulation:
         # if make_plots:
         fig = plt.figure();
         ax = fig.add_subplot(111);
-        line1, = ax.plot([], [], '.k');
+        line1, = ax.plot([], [], '-k');
         fig.show();
         
         # Run while the current time is
@@ -175,16 +175,29 @@ class Simulation:
                 
                 # Proceed with the next time step
                 self.Step();
+                
+                # Get a streakline
+                x_streak, y_streak, z_streak, d_streak = self.GetStreaklines();
+                
+                # Number of streaklines
+                n_streaks = len(x_streak);
             
                 # Make the plots
                 if make_plots:
-                    xplot, yplot, zplot = self.ParticleField.GetCoordinates();
-                    line1.set_xdata(xplot);
-                    line1.set_ydata(yplot);
-                    ax.set_xlim([-2, 2]);
+                    # xplot, yplot, zplot = self.ParticleField.GetCoordinates();
+                    # line1.set_xdata(xplot);
+                    # line1.set_ydata(yplot);
+                    # line1.set_xdata(x_streak[0]);
+                    # line1.set_ydata(y_streak[0]);
+                    ax.clear();
+                    for n in range(n_streaks):
+                        ax.plot(x_streak[n], y_streak[n], '-k');
+                    
+                    # pdb.set_trace();
+                    ax.set_xlim([0, 8]);
                     ax.set_ylim([-2, 2]);
                     fig.canvas.draw();
-                    time.sleep(0.001)
+                    time.sleep(0.01)
         except KeyboardInterrupt:
             pass
     
@@ -213,8 +226,10 @@ class Simulation:
         # and add some more back in
         self.CircleOfLife();
         
+        # Count the number of particles
         num_alive = self.ParticleField.Count;
         
+        # Print the number alive
         print("Number alive: " + str(num_alive));
         
         # Increment the time counter
@@ -224,6 +239,7 @@ class Simulation:
     # between time steps.
     def CircleOfLife(self):
         
+        # Query the simulation iteration number
         counter = self.IterationNumber;      
         
         # Read some options
@@ -232,6 +248,7 @@ class Simulation:
         
         # Flow type
         flow_type = self.Parameters.FlowType;
+        
         # Plot type
         plot_type = self.Parameters.PlotType;
         
@@ -337,6 +354,38 @@ class Simulation:
         self.ParticleField.RemoveDead();
              
 
+    # This function gets all of the streaklines
+    def GetStreaklines(self):
+        # Number of starting particles
+        num_starting_points = len(self.InitialPositions.X);
+        
+        # Initialize vectors
+        x = [];
+        y = [];
+        z = [];
+        durations = [];
+        
+        # Loop over all the starting points
+        for k in range(num_starting_points):
+            
+            # Get positions
+            x0 = self.InitialPositions.X[k];
+            y0 = self.InitialPositions.Y[k];
+            z0 = self.InitialPositions.Z[k];
+            
+            # Get a single streakline
+            x_streak, y_streak, z_streak, d_streak = self.GetStreakline(y0 = (x0, y0, z0));
+            
+            # Append the streaklines
+            x.append(x_streak);
+            y.append(y_streak);
+            z.append(z_streak);
+            durations.append(d_streak);
+            
+        # Return the list
+        return x, y, z, durations
+            
+    
     # This function gets the coordinates of all of the
     # particles that started at a certain point, 
     # i.e., a streakline.  
@@ -350,20 +399,34 @@ class Simulation:
         x = [];
         y = [];
         z = [];
+        durations = [];
 
         # Loop over all the particles and 
         # compare the origin of each
         # with the queried starting position
         for k in range(num_particles):
             particle = self.ParticleField.Particles[k];
-            if particle.Origin == y0:
+            if particle.Position.Origin == y0:
                 x_new = particle.Position.X;
                 y_new = particle.Position.Y;
                 z_new = particle.Position.Z;
+                durations_new = particle.Duration;
                 
+                # Append to list
                 x.append(x_new);
                 y.append(y_new);
                 z.append(z_new);
+                durations.append(durations_new);
+                
+        # Now sort them by age
+        x_streak = [k for (durations, k) in sorted(zip(durations, x))];
+        y_streak = [k for (durations, k) in sorted(zip(durations, y))];
+        z_streak = [k for (durations, k) in sorted(zip(durations, z))];
+        durations_streak = sorted(durations);
+        
+        # Return the coordinates and durations (the ages)
+        # of the points on the streakline, sorted by duration.
+        return x_streak, y_streak, z_streak, durations_streak
         
 
 class ParticleField:

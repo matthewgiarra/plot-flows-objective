@@ -2,7 +2,7 @@ import flows
 import numpy as np
 import pdb
 
-num_particles = 20;
+num_particles = 10;
 
 # Coordinates
 x = list(np.linspace(0, 0, num_particles));
@@ -17,7 +17,7 @@ alpha = 1;
 c = 1;
 
 # Domain
-xd = (-1.1, 1.1);
+xd = (-1.1, 8.0);
 yd = (-1.1, 1.1);
 zd = (-1, 1);
 
@@ -30,12 +30,16 @@ plot_type = "streak";
 # Flow type
 flow_type = "hama";
 
+# Time stuff
+sim_time = [0, np.inf, 0.5];
+
 sim = flows.Simulation(x_domain = xd, 
                         y_domain = yd,
                         z_domain = zd, 
                         y0 = y0, 
                         flow_type = flow_type, 
-                        plot_type = plot_type, 
+                        plot_type = plot_type,
+                        time = sim_time, 
                         extra_args = extra_args);
   
 # Run the simulation                                
