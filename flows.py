@@ -133,7 +133,7 @@ class Simulation:
             x = y0[0];
             y = y0[1];
             z = y0[2];
-            
+
             # Initial positions of the particles
             self.InitialPositions = Position(x, y, z);
 
@@ -154,6 +154,9 @@ class Simulation:
             # Assign the time object to the simulation
             self.Time = time;
             
+            # Keep track of the iterations
+            self.IterationNumber = 0;
+            
     # Run the simulation
     def Run(self, make_plots = True):
         current_time = self.Time.Current;
@@ -169,9 +172,8 @@ class Simulation:
         # less than the stopping time
         try:
             while current_time < stop_time and (self.ParticleField.Count) > 0:
-                # Make a counter
-                counter = next(iter_counter);
-                print("On iteration " + str(counter));
+                
+                # Proceed with the next time step
                 self.Step();
             
                 # Make the plots
@@ -182,12 +184,22 @@ class Simulation:
                     ax.set_xlim([-2, 2]);
                     ax.set_ylim([-2, 2]);
                     fig.canvas.draw();
-                    time.sleep(0.01)
+                    time.sleep(0.001)
         except KeyboardInterrupt:
             pass
     
     # This iterates the simulation        
     def Step(self):
+        
+        # Advance the iteration number
+        counter = next(iter_counter);
+        self.IterationNumber = counter;
+        
+        # Age the particles by one step
+        self.ParticleField.Age();
+        
+        # Print
+        print("On iteration " + str(counter));
         
         # Starting time of the iteration
         t0 = self.Time.Current;
@@ -201,12 +213,18 @@ class Simulation:
         # and add some more back in
         self.CircleOfLife();
         
+        num_alive = self.ParticleField.Count;
+        
+        print("Number alive: " + str(num_alive));
+        
         # Increment the time counter
         self.Time.Current += dt;
 
     # This method creates and destroys particles
     # between time steps.
     def CircleOfLife(self):
+        
+        counter = self.IterationNumber;      
         
         # Read some options
         periodic_domain = self.Parameters.PeriodicDomain;
@@ -288,7 +306,10 @@ class Simulation:
                             else:
                                 z = z_domain[0];
                     else:
+                        # Read the particle origin
                         particle_origin = self.ParticleField.Particles[k].Position.Origin;
+                        
+                        # Parse the coordinates
                         x = particle_origin[0];
                         y = particle_origin[1];
                         z = particle_origin[2];
@@ -304,6 +325,7 @@ class Simulation:
         # Put new particles at the streakline injection
         # if it's a streak plot
         if "streak" in plot_type.lower():
+            print("Make new particle!")
             x_new = self.InitialPositions.X;
             y_new = self.InitialPositions.Y;
             z_new = self.InitialPositions.Z;
@@ -315,16 +337,49 @@ class Simulation:
         self.ParticleField.RemoveDead();
              
 
+    # This function gets the coordinates of all of the
+    # particles that started at a certain point, 
+    # i.e., a streakline.  
+    def GetStreakline(self, y0 = (0, 0, 0)):
+        # Read the number of particles
+        
+        # Number of particles
+        num_particles = self.ParticleField.Count;
+        
+        # Create vectors for the coordinates
+        x = [];
+        y = [];
+        z = [];
+
+        # Loop over all the particles and 
+        # compare the origin of each
+        # with the queried starting position
+        for k in range(num_particles):
+            particle = self.ParticleField.Particles[k];
+            if particle.Origin == y0:
+                x_new = particle.Position.X;
+                y_new = particle.Position.Y;
+                z_new = particle.Position.Z;
+                
+                x.append(x_new);
+                y.append(y_new);
+                z.append(z_new);
+        
+
 class ParticleField:
-    def __init__(self, x = [0,], y = [0,], z = [0,]):
+    def __init__(self, x = [0,], y = [0,], z = [0,], durations = None):
         
         # Number of particles to create
         num_particles = np.min([len(x), len(y), len(z)]);
         
-        # Create the particles     
-        Particles = [Particle(x[count], y[count], z[count]) 
-                        for count in range(num_particles)];
+        # Default ages
+        if durations is None:
+            durations = list(np.zeros(num_particles));
         
+        # Create the particles     
+        Particles = [Particle(x[count], y[count], z[count], durations[count]) 
+                        for count in range(num_particles)];
+                        
         # Assign the field
         self.Particles = Particles;
         
@@ -366,10 +421,10 @@ class ParticleField:
         self.Count = len(self.Particles);
     
     # Make new particles
-    def CreateParticles(self, x = [0, ], y = [0, ], z = [0, ]):
+    def CreateParticles(self, x = [0, ], y = [0, ], z = [0, ], durations = None):
         
         # New particle field
-        new_field = ParticleField(x, y, z);
+        new_field = ParticleField(x, y, z, durations);
         
         # Extend the particle list
         self.Particles.extend(new_field.Particles);
@@ -408,9 +463,21 @@ class ParticleField:
         
         # Return the vectors    
         return x, y, z
+        
+    # This function increases
+    # the ages of all the particles
+    # by an amount
+    def Age(self, amount = 1):
+        
+        # Number of particles
+        num_particles = self.Count;
+        
+        # Loop over all the particles
+        for k in range(num_particles):
+            self.Particles[k].Age(amount);
     
 class Particle:
-    def __init__(self, x = 0.0, y = 0.0, z = 0.0, u = 0.0, v = 0.0, w = 0.0):
+    def __init__(self, x = 0.0, y = 0.0, z = 0.0, u = 0.0, v = 0.0, w = 0.0, duration = 0):
         
         # Velocity
         vel = Velocity(u, v, w);
@@ -425,6 +492,9 @@ class Particle:
         
         # Set the ID
         self.ID = next(particle_counter);
+        
+        # Set the age
+        self.Duration = duration;
     
     # Update particle position based on some velocity field    
     def Advect(self, flow_type = None, t0 = 0.0, dt = 0.0, extra_args = None):
@@ -466,7 +536,16 @@ class Particle:
     # Kill particles
     def Kill(self):
         self.Alive = False;
-                
+        
+        
+    # This function increases
+    # the age of a single particle
+    # by an amount
+    def Age(self, amount = 1):
+
+        # Age the particle
+        self.Duration += amount;
+            
 
 # Vectorize means make this work element-wise
 # @np.vectorize  

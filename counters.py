@@ -2,7 +2,7 @@ import flows
 import numpy as np
 import pdb
 
-num_particles = 5;
+num_particles = 20;
 
 # Coordinates
 x = list(np.linspace(0, 0, num_particles));
@@ -17,8 +17,8 @@ alpha = 1;
 c = 1;
 
 # Domain
-xd = (-1, 1);
-yd = (-1, 1);
+xd = (-1.1, 1.1);
+yd = (-1.1, 1.1);
 zd = (-1, 1);
 
 # Hama flow constants
