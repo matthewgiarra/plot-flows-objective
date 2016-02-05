@@ -41,9 +41,7 @@ Flow
 # Define pi
 pi = np.pi;
 
-# Counter
-particle_counter = itertools.count();
-iter_counter = itertools.count();
+
 
 class Velocity:
     def __init__(self, U = 0.0, V = 0.0, W = 0.0):
@@ -156,9 +154,9 @@ class Simulation:
             # Assign the time object to the simulation
             self.Time = time;
             
-            # Keep track of the iterations
-            self.IterationNumber = 0;
-            
+            # Counter to keep track of the iterations
+            self.IterationNumber = itertools.count(0);
+                        
     # Run the simulation
     def Run(self, make_plots = True):
         current_time = self.Time.Current;
@@ -216,8 +214,7 @@ class Simulation:
     def Step(self):
         
         # Advance the iteration number
-        counter = next(iter_counter);
-        self.IterationNumber = counter;
+        counter = next(self.IterationNumber);
         
         # Age the particles by one step
         self.ParticleField.Age();
@@ -508,9 +505,6 @@ class ParticleField:
         
         # Count the alive particles
         self.Alive = num_particles;
-        
-        # Count dead particles
-        self.Dead = 0;
      
     def Advect(self, flow_type = None, t0 = 0, dt = 0, extra_args = None):
 
@@ -643,9 +637,6 @@ class Particle:
         
         # Alive flag
         self.Alive = True;
-        
-        # Set the ID
-        self.ID = next(particle_counter);
         
         # Set the age
         self.Duration = duration;
