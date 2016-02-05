@@ -1,7 +1,5 @@
-import numpy as np
-from .velocities import HamaVelocity, Parse_Vector_2d
-
-# ODE integrator
+# import numpy as np
+from .velocities import *
 from scipy.integrate import odeint
 
 # Velocity vector class
@@ -235,14 +233,12 @@ class Particle:
     
     # Kill particles
     def Kill(self):
-        self.Alive = False;
-        
+        self.Alive = False;       
         
     # This function increases
     # the age of a single particle
     # by an amount
     def Age(self, amount = 1):
-
         # Age the particle
         self.Duration += amount;
         

@@ -1,6 +1,6 @@
 
 # Numpy for array operations, etc.
-import numpy as np
+# import numpy as np
 
 # Plotting
 import matplotlib.pyplot as plt
