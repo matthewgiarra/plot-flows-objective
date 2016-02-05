@@ -38,28 +38,33 @@ Flow
     
 """
 
-# Define pi
-pi = np.pi;
-
-
-
+# Velocity vector class
 class Velocity:
     def __init__(self, U = 0.0, V = 0.0, W = 0.0):
         self.U = U;
         self.V = V;
         self.W = W;
-        
-        
+ 
+# Position vector class (cartesian)       
 class Position:
     def __init__(self, X = 0.0, Y = 0.0, Z = 0.0):
         
         # Updateable particle coordinates
-        self.X = X;
-        self.Y = Y;
-        self.Z = Z;
+        self.Current.X = X;
+        self.Current.Y = Y;
+        self.Current.Z = Z;
+        
+        # Particle position history
+        self.History.X = [X,];
+        self.History.Y = [Y,];
+        self.History.Z = [Z,];
         
         # Particle origin.
         # This is where the particle was created.
+        # This is made as a tuple to
+        # ensure that it is immutable
+        # (the origin of a particle
+        # should never change)
         self.Origin = (X, Y, Z);
 
 def Parse_Vector_2d(xy):
@@ -277,9 +282,9 @@ class Simulation:
         for k in range(num_particles):
             
             # Read particle positions
-            x = self.ParticleField.Particles[k].Position.X;
-            y = self.ParticleField.Particles[k].Position.Y;
-            z = self.ParticleField.Particles[k].Position.Z;
+            x = self.ParticleField.Particles[k].Position.Current.X;
+            y = self.ParticleField.Particles[k].Position.Current.Y;
+            z = self.ParticleField.Particles[k].Position.Current.Z;
             
             # Determine whether the particle left the
             # domain on each face.
@@ -446,9 +451,9 @@ class Simulation:
         for k in range(num_particles):
             particle = self.ParticleField.Particles[k];
             if particle.Position.Origin == y0:
-                x_new = particle.Position.X;
-                y_new = particle.Position.Y;
-                z_new = particle.Position.Z;
+                x_new = particle.Position.Current.X;
+                y_new = particle.Position.Current.Y;
+                z_new = particle.Position.Current.Z;
                 durations_new = particle.Duration;
                 
                 # Append to list
@@ -588,9 +593,9 @@ class ParticleField:
         
         # Loop over all the particles
         for k in range(num_particles):
-            x.append(self.Particles[k].Position.X);
-            y.append(self.Particles[k].Position.Y);
-            z.append(self.Particles[k].Position.Z);
+            x.append(self.Particles[k].Position.Current.X);
+            y.append(self.Particles[k].Position.Current.Y);
+            z.append(self.Particles[k].Position.Current.Z);
         
         # Return the vectors    
         return x, y, z
@@ -605,11 +610,11 @@ class ParticleField:
         # Loop over all the particles
         for k in range(num_particles):
             if x is not None:
-                self.Particles[k].Position.X = x[k];
+                self.Particles[k].Position.Current.X = x[k];
             if y is not None:
-                self.Particles[k].Position.Y = y[k];
+                self.Particles[k].Position.Current.Y = y[k];
             if z is not None:
-                self.Particles[k].Position.Z = z[k];
+                self.Particles[k].Position.Current.Z = z[k];
             
         
     # This function increases
@@ -644,9 +649,9 @@ class Particle:
     # Update particle position based on some velocity field    
     def Advect(self, flow_type = None, t0 = 0.0, dt = 0.0, extra_args = None):
         if flow_type is not None:
-            x0 = self.Position.X;
-            y0 = self.Position.Y;
-            z0 = self.Position.Z;
+            x0 = self.Position.Current.X;
+            y0 = self.Position.Current.Y;
+            z0 = self.Position.Current.Z;
             
             # Final time
             tf = t0 + dt;
@@ -668,8 +673,8 @@ class Particle:
                     print("Error integrating!");
                     
                 # Extract the new positions
-                self.Position.X = xy[0];
-                self.Position.Y = xy[1];
+                self.Position.Current.X = xy[0];
+                self.Position.Current.Y = xy[1];
                 
                 # New velocity
                 uv = HamaVelocity(xy0, t, extra_args)
