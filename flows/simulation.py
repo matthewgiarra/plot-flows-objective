@@ -14,9 +14,6 @@ import pdb
 # Particle stuff
 from .particles import *
 
-# Velocity functions
-from .velocities import *
-
 # Time
 import time
 
@@ -190,154 +187,167 @@ class Simulation:
 
     # This method creates and destroys particles
     # between time steps.
-    def CircleOfLife(self):
+    def CircleOfLife(self): 
         
-        # Query the simulation iteration number
-        counter = self.IterationNumber;      
-        
-        # Read some options
-        periodic_domain = self.Parameters.PeriodicDomain;
+        # Read some parameters
+        # 
+        # Boolean: Regenerate dead particles?
         regenerate_particles = self.Parameters.RegenerateParticles;
-        
-        # Flow type
-        flow_type = self.Parameters.FlowType;
         
         # Plot type
         plot_type = self.Parameters.PlotType;
         
-        # Read in the domain
+        # Kill the particles that are outside the
+        # domain and return their indices
+        self.KillEscapees();
+        
+        # Regenerate the dead particles
+        # if that option is specified.
+        if regenerate_particles:
+            self.RegenerateParticles();
+                                
+        # Put new particles at the streakline injection
+        # if that option was specified.
+        if "streak" in plot_type.lower():
+            self.InjectStreaklines();
+        
+        # Remove the dead particles
+        self.ParticleField.RemoveDead();            
+
+    # This function checks if particles have left a domain
+    # and returns their index within the particle field
+    # structure, as well as flags specifying the direction
+    # in which the particles left the domain.
+    #
+    # The function can also kill the particles
+    # that leave the domain.
+    def KillEscapees(self):
+        
+        # Loop over all of the particles
+        # and mark as dead any that have
+        # left the domain.
+        for k in range(self.ParticleField.Count):
+            
+            # Check if the particle has left the domain for each axis
+            # The function called here returns true 
+            # for the axes of the domain
+            # where the particle has not left.
+            x_in, y_in, z_in = self.ParticleField.Particles[k].CheckInOut(self.Domain);
+            
+            # Mark the particle dead
+            # if it left the domain.
+            if not(x_in or y_in or z_in):
+                self.ParticleField.Particles[k].Kill();
+                
+    # This method regenerates dead particles    
+    def RegenerateParticles(self):
+        
+        # Read some options
+        periodic_domain = self.Parameters.PeriodicDomain;
+                
+        # Allocate new coordinates
+        xnew = [];
+        ynew = [];
+        znew = [];
+        
+        # Read the domain
         x_domain = self.Domain.X;
         y_domain = self.Domain.Y;
         z_domain = self.Domain.Z;
         
-        # Count the number of particles
-        num_particles = self.ParticleField.Count;
-        
-        # Allocate space for new particle positions
-        x_new = [];
-        y_new = [];
-        z_new = [];
-        
-        # Loop over the particles
-        for k in range(num_particles):
+        # Loop over the particles that have left
+        for k in range(self.ParticleField.Count):
             
-            # Read particle positions
-            x = self.ParticleField.Particles[k].Position.Current.X;
-            y = self.ParticleField.Particles[k].Position.Current.Y;
-            z = self.ParticleField.Particles[k].Position.Current.Z;
+            # Replace the dead particles.
+            if self.ParticleField.Particles[k].Alive is False:
+                
+                # Read particle positions
+                x = self.ParticleField.Particles[k].Position.Current.X;
+                y = self.ParticleField.Particles[k].Position.Current.Y;
+                z = self.ParticleField.Particles[k].Position.Current.Z;
+                
+                # Check if particle is outside the domain
+                x_in, y_in, z_in = self.ParticleField.Particles[k].CheckInOut(self.Domain);
+                
+                # Periodic domain regeneration
+                if periodic_domain is True:
+                    # Figure out which edge of the domain 
+                    # the particle exited through, and 
+                    # set the new particle starting position
+                    # opposite that face. 
+                    #
+                    # Check X faces
+                    if not(x_in):
+                        if x < x_domain[0]:
+                            x = x_domain[1];
+                        else:
+                            x = x_domain[0];
             
-            # Determine whether the particle left the
-            # domain on each face.
-            x_out = not(x_domain[0] <= x <= x_domain[1]);
-            y_out = not(y_domain[0] <= y <= y_domain[1]);
-            z_out = not(z_domain[0] <= z <= z_domain[1]);
-            
-            # Kill the particle if it's outside the range
-            if x_out or y_out or z_out:
-                
-                # This flags the particle as dead,
-                # but doesn't remove it from the
-                # particle field yet. That part
-                # is handled by ParticleField.RemoveDead()
-                self.ParticleField.Particles[k].Kill();
-                
-                # Check if particles should be regenerated.
-                if regenerate_particles is True:
-                
-                    # This is for periodic domains:
-                    # the new particle will be generated
-                    # on the face opposite to where
-                    # it exited the domain
-                
-                    if periodic_domain is True:
-                        # Figure out which edge of the domain 
-                        # the particle exited through, and 
-                        # set the new particle starting position
-                        # opposite that face. 
-                        #
-                        # Check X faces
-                        if x_out:
-                            if x < x_domain[0]:
-                                x = x_domain[1];
-                            else:
-                                x = x_domain[0];
-                
-                        # Check Y faces
-                        if y_out:
-                            if y < y_domain[0]:
-                                y = y_domain[1];
-                            else:
-                                y = y_domain[0];
-                        
-                        # Check Z faces
-                        if z_out:
-                            if z < z_domain[0]:
-                                z = z_domain[1];
-                            else:
-                                z = z_domain[0];
-                    else:
-                        # Read the particle origin
-                        particle_origin = self.ParticleField.Particles[k].Position.Origin;
-                        
-                        # Parse the coordinates
-                        x = particle_origin[0];
-                        y = particle_origin[1];
-                        z = particle_origin[2];
-                        
-                    # Append the new positions to the list      
-                    x_new.append(x);
-                    y_new.append(y);
-                    z_new.append(z);
+                    # Check Y faces
+                    if not(y_in):
+                        if y < y_domain[0]:
+                            y = y_domain[1];
+                        else:
+                            y = y_domain[0];
                     
-                    # Make new particles
-                    self.ParticleField.CreateParticles(x_new, y_new, z_new);       
+                    # Check Z faces
+                    if not(y_in):
+                        if z < z_domain[0]:
+                            z = z_domain[1];
+                        else:
+                            z = z_domain[0];
+                else:
+                    # Read the particle origin
+                    particle_origin = self.ParticleField.Particles[k].Position.Origin;
+                    
+                    # Parse the coordinates
+                    x = particle_origin[0];
+                    y = particle_origin[1];
+                    z = particle_origin[2];
+                    
+                # Append the new positions to the list      
+                x_new.append(x);
+                y_new.append(y);
+                z_new.append(z);
+                
+                # Make the new particles
+                self.ParticleField.CreateParticles(x_new, y_new, z_new);    
+            
+    # This function injects streakline particles.
+    def InjectStreaklines(self):
         
-        # Put new particles at the streakline injection
-        # if it's a streak plot
-        if "streak" in plot_type.lower():
-            print("Make new particle!")
-            
-            # Number of streakline starting points.
-            num_pos = len(self.InitialPositions.X);
-            
-            # Get the coordinates of all of the
-            # streakline starting points.
-            x_init = self.InitialPositions.X;
-            y_init = self.InitialPositions.Y;
-            z_init = self.InitialPositions.Z;
-            
-            # Loop over the injection points
-            for n in range(num_pos):
-                
-                # Read the startign position of
-                # the n'th streak injection point
-                y0 = (x_init[n], y_init[n], z_init[n]);
-                
-                # Extract the streakline
-                xs, ys, zs, ds = self.GetStreakline(y0);
-            
-            
-                # Components of the vector from the origin
-                dx = xs[0] - x_init[n];
-                dy = ys[0] - y_init[n];
-                dz = zs[0] - z_init[n];
-                
-                # Distance of the particle from the origin
-                dr = np.sqrt(dx**2 + dy**2 + dz**2);
-                
-                # Create a new particle if the previous particle
-                # has moved far enough away from its origin.
-                if dr > self.Parameters.NewParticleDistance:
-                    self.ParticleField.CreateParticles([x_init[n],], [y_init[n],], [z_init[n],]);
-            
-            
-            # Make the new particles
-            # self.ParticleField.CreateParticles(x_new, y_new, z_new);
+        # Number of streakline starting points.
+        num_streaklines = len(self.InitialPositions.X);
         
-        # Remove the dead particles
-        self.ParticleField.RemoveDead();
-             
-
+        # Get the coordinates of all of the
+        # streakline starting points.
+        x_init = self.InitialPositions.X;
+        y_init = self.InitialPositions.Y;
+        z_init = self.InitialPositions.Z;
+        
+        # Loop over the injection points
+        for n in range(num_streaklines):
+            
+            # Read the startign position of
+            # the n'th streak injection point
+            y0 = (x_init[n], y_init[n], z_init[n]);
+            
+            # Extract the streakline
+            xs, ys, zs, ds = self.GetStreakline(y0);
+        
+            # Components of the vector from the origin
+            dx = xs[0] - x_init[n];
+            dy = ys[0] - y_init[n];
+            dz = zs[0] - z_init[n];
+            
+            # Distance of the particle from the origin
+            dr = np.sqrt(dx**2 + dy**2 + dz**2);
+            
+            # Create a new particle if the previous particle
+            # has moved far enough away from its origin.
+            if dr > self.Parameters.NewParticleDistance:
+                self.ParticleField.CreateParticles([x_init[n],], [y_init[n],], [z_init[n],]);
+    
     # This function gets all of the streaklines
     def GetStreaklines(self):
         # Number of starting particles
@@ -369,11 +379,10 @@ class Simulation:
         # Return the list
         return x, y, z, durations
             
-    
     # This function gets the coordinates of all of the
     # particles that started at a certain point, 
     # i.e., a streakline.  
-    def GetStreakline(self, y0 = (0, 0, 0), smooth = False, num_smooth_points = 100):
+    def GetStreakline(self, y0 = (0, 0, 0)):
         # Read the number of particles
         
         # Number of particles
@@ -413,21 +422,6 @@ class Simulation:
         ys = [k for (durations, k) in sorted(zip(durations, y))];
         zs = [k for (durations, k) in sorted(zip(durations, z))];
         ds = sorted(durations);
-        
-        # Smoothing
-        if smooth is True:
-            
-            if len(xs) > 3:
-                # pdb.set_trace();
-                tck_x = interpolate.splrep(ds, xs, s = 0);
-                tck_y = interpolate.splrep(ds, ys, s = 0);
-                tck_z = interpolate.splrep(ds, zs, s = 0);
-                dur_new = np.linspace(min(ds), max(ds), num_smooth_points);
-            
-                xs = interpolate.splev(dur_new, tck_x, der = 0);
-                ys = interpolate.splev(dur_new, tck_y, der = 0);
-                zs = interpolate.splev(dur_new, tck_z, der = 0)
-                ds = dur_new;
         
         # Return the coordinates and durations (the ages)
         # of the points on the streakline, sorted by duration.

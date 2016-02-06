@@ -163,7 +163,7 @@ class ParticleField:
                 self.Particles[k].Position.Current.Y = y[k];
             if z is not None:
                 self.Particles[k].Position.Current.Z = z[k];
-                  
+         
     # This function increases
     # the ages of all the particles
     # by an amount
@@ -231,6 +231,36 @@ class Particle:
                 self.Velocity.U = uv[0];
                 self.Velocity.V = uv[1];
     
+    # This method checks whether a particle is
+    # within a domain, and returns a boolean
+    # for each direction of the domain
+    # that is true if the particle is within
+    # the domain, and false if the particle
+    # is outside of the domain in that direction
+    def CheckInOut(self, Domain = None):
+        if Domain is not None:
+            
+            # Read in the domain
+            x_domain = Domain.X;
+            y_domain = Domain.Y;
+            z_domain = Domain.Z;
+    
+            # Get the current particle position
+            x = self.Position.Current.X;
+            y = self.Position.Current.Y;
+            z = self.Position.Current.Z;
+            
+            # Check if the particle is within the domain
+            # These statements evaluate True
+            # if the particle position is within 
+            # the domain, and False if it is not.
+            x_in = x_domain[0] < x < x_domain[1];
+            y_in = y_domain[0] < y < y_domain[1];
+            z_in = z_domain[0] < z < z_domain[1];
+            
+            # Return the Boolean results
+            return x_in, y_in, z_in;
+      
     # Kill particles
     def Kill(self):
         self.Alive = False;       
