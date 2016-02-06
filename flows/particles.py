@@ -243,10 +243,13 @@ class ParticleField:
         for k in range(num_particles):
             if x is not None:
                 self.Particles[k].Position.Current.X = x[k];
+                self.Particles[k].Position.History.X.append(x[k]);
             if y is not None:
                 self.Particles[k].Position.Current.Y = y[k];
+                self.Particles[k].Position.History.Y.append(y[k]);
             if z is not None:
                 self.Particles[k].Position.Current.Z = z[k];
+                self.Particles[k].Position.History.Z.append(y[k]);
          
     # This function increases
     # the ages of all the particles

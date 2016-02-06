@@ -2,12 +2,21 @@ import flows
 import numpy as np
 import pdb
 
-num_particles = 10;
+num_particles_y = 50;
+num_particles_x = 2;
 
 # Coordinates
-x = list(np.linspace(0, 0, num_particles));
-y = list(np.linspace(-1, 1, num_particles));
-z = list(np.linspace(0, 0, num_particles));
+xv = np.linspace(0, 0.2, num_particles_x);
+yv = np.linspace(-1, 1, num_particles_y);
+
+xm, ym = np.meshgrid(xv, yv);
+
+x = xm.flatten();
+y = ym.flatten();
+
+# Z values
+z = np.zeros(len(x));
+
 
 # Make them a vector
 y0 = [x, y, z];
@@ -25,7 +34,7 @@ zd = (-1, 1);
 extra_args = [a, alpha, c];
 
 # Plot type
-plot_type = "streak";
+plot_type = "time";
 
 # Flow type
 flow_type = "hama";

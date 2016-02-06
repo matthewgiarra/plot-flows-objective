@@ -32,9 +32,17 @@ class Parameters:
         self.NewParticleDistance = NewParticleDistance;
         
         # Set options for the different types of plots
+        #
+        # Streakline plot
         if "streak" in plot_type.lower():
             self.PeriodicDomain = False;
             self.RegenerateParticles = False;
+        
+        # Pathline plot
+        if "path" in plot_type.lower():
+            self.PeriodicDomain = False;
+            self.RegenerateParticles = False;
+            
                       
 # Extents of a domain
 class Domain:
@@ -109,6 +117,9 @@ class Simulation:
         line1, = ax.plot([], [], '-k');
         fig.show();
         
+        # Read the plot type
+        plot_type = self.Parameters.PlotType.lower();
+        
         # Run while the current time is
         # less than the stopping time
         try:
@@ -121,8 +132,14 @@ class Simulation:
                 ax.clear();
                 
                 # Check streaklines plot
-                if "streak" in self.Parameters.PlotType:
-                    StreakPlot(ax, ParticleField = self.ParticleField)
+                if "streak" in plot_type:
+                    StreakPlot(ax, ParticleField = self.ParticleField);
+                    
+                elif "path" in plot_type:
+                    PathlinePlot(ax, ParticleField = self.ParticleField);
+                    
+                elif "time" in plot_type:
+                    TimelinePlot(ax, ParticleField = self.ParticleField);
                 
                 # pdb.set_trace();
                 ax.set_xlim(xd);

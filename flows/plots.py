@@ -1,5 +1,7 @@
 # Plotting
 import matplotlib.pyplot as plt
+# import numpy as np
+# from scipy import interpolate
 
 # This function plots streaklines.
 def StreakPlot(ax, ParticleField = None):
@@ -19,3 +21,34 @@ def StreakPlot(ax, ParticleField = None):
 
             # Plot this streak line
             ax.plot(x_streak[n], y_streak[n], '.');
+            
+            
+def PathlinePlot(ax, ParticleField = None):
+    if ParticleField is not None:
+        
+        # Loop over all the particles.
+        for k in range(ParticleField.Count):
+            
+            # Extract the positions
+            x = ParticleField.Particles[k].Position.History.X;
+            y = ParticleField.Particles[k].Position.History.Y;
+            
+            # Make the plot
+            ax.plot(x, y, '-.');
+            
+def TimelinePlot(ax, ParticleField = None):
+    if ParticleField is not None:
+        
+        # Initialize the position vectors
+        x = [];
+        y = [];
+        
+        # Loop over all the particles
+        for k in range(ParticleField.Count):
+        
+            # Extract the positions
+            x.append(ParticleField.Particles[k].Position.Current.X);
+            y.append(ParticleField.Particles[k].Position.Current.Y);
+        
+        # Make the plot
+        ax.plot(x, y, '.-k');
