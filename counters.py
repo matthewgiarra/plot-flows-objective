@@ -3,10 +3,10 @@ import numpy as np
 import pdb
 
 num_particles_y = 50;
-num_particles_x = 2;
+num_particles_x = 1;
 
 # Coordinates
-xv = np.linspace(0, 0.2, num_particles_x);
+xv = np.linspace(20, 20, num_particles_x);
 yv = np.linspace(-1, 1, num_particles_y);
 
 xm, ym = np.meshgrid(xv, yv);
@@ -34,7 +34,7 @@ zd = (-1, 1);
 extra_args = [a, alpha, c];
 
 # Plot type
-plot_type = "time";
+plot_type = "path";
 
 # Flow type
 flow_type = "hama";

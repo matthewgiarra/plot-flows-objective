@@ -34,7 +34,7 @@ def PathlinePlot(ax, ParticleField = None):
             y = ParticleField.Particles[k].Position.History.Y;
             
             # Make the plot
-            ax.plot(x, y, '-.');
+            ax.plot(x, y, '-');
             
 def TimelinePlot(ax, ParticleField = None):
     if ParticleField is not None:

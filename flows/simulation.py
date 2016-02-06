@@ -145,7 +145,7 @@ class Simulation:
                 ax.set_xlim(xd);
                 ax.set_ylim([-2, 2]);
                 fig.canvas.draw();
-                time.sleep(0.01)
+                time.sleep(0.00001)
         except KeyboardInterrupt:
             pass
     
@@ -167,7 +167,7 @@ class Simulation:
         
         # Advect the particles
         self.ParticleField.Advect(flow_type = self.Parameters.FlowType,
-        t0 = t0, dt = dt, extra_args = self.Parameters.ExtraArgs);
+            t0 = t0, dt = dt, extra_args = self.Parameters.ExtraArgs);
         
         # Remove the dead particles
         # and add some more back in
@@ -233,7 +233,7 @@ class Simulation:
             
             # Mark the particle dead
             # if it left the domain.
-            if not(x_in or y_in or z_in):
+            if not(x_in and y_in and z_in):
                 self.ParticleField.Particles[k].Kill();
                 
     # This method regenerates dead particles    
