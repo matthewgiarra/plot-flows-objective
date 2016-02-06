@@ -9,21 +9,21 @@ class Velocity:
         self.V = V;
         self.W = W;
  
-class CartesianCoordinate:
+class CartesianCoordinates:
     def __init__(self, X = 0.0, Y = 0.0, Z = 0.0):
         self.X = X;
         self.Y = Y;
         self.Z = Z;
-    
+  
 # Position vector class (cartesian)       
 class Position:
     def __init__(self, X = 0.0, Y = 0.0, Z = 0.0):
         
         # Current position
-        self.Current = CartesianCoordinate(X, Y, Z);
+        self.Current = CartesianCoordinates(X, Y, Z);
         
         # Position history
-        self.History = CartesianCoordinate([X,], [Y,], [Z,]);
+        self.History = CartesianCoordinates([X,], [Y,], [Z,]);
         
         # Position origin
         # I made this a single tuple
@@ -56,7 +56,10 @@ class ParticleField:
         
         # Count the alive particles
         self.Alive = num_particles;
-    
+        
+        # Initial positions of the particles
+        self.InitialPositions = CartesianCoordinates(x, y, z);
+        
     # This function advects the entire field of particles
     # according to some velocity function. 
     def Advect(self, flow_type = None, t0 = 0, dt = 0, extra_args = None):
@@ -89,7 +92,88 @@ class ParticleField:
             x_new, y_new = Parse_Vector_2d(xy);
             
             # Set the new coordinates
-            self.SetCoordinates(x = x_new, y = y_new);    
+            self.SetCoordinates(x = x_new, y = y_new);
+            
+    # This function gets all of the streaklines
+    def GetStreaklines(self):
+        # Number of starting particles
+        num_starting_points = len(self.InitialPositions.X);
+
+        # Initialize vectors
+        x = [];
+        y = [];
+        z = [];
+        durations = [];
+
+        # Loop over all the starting points
+        for k in range(num_starting_points):
+
+            # Get positions
+            x0 = self.InitialPositions.X[k];
+            y0 = self.InitialPositions.Y[k];
+            z0 = self.InitialPositions.Z[k];
+
+            # Get a single streakline
+            x_streak, y_streak, z_streak, d_streak = self.GetStreakline(y0 = (x0, y0, z0));
+
+            # Append the streaklines
+            x.append(x_streak);
+            y.append(y_streak);
+            z.append(z_streak);
+            durations.append(d_streak);
+
+        # Return the list
+        return x, y, z, durations
+    
+    # This function gets the coordinates of all of the
+    # particles that started at a certain point, 
+    # i.e., a streakline.  
+    def GetStreakline(self, y0 = (0, 0, 0)):
+        # Read the number of particles
+
+        # Number of particles
+        num_particles = self.Count;
+
+        # Create vectors for the coordinates
+        x = [];
+        y = [];
+        z = [];
+        durations = [];
+
+        # Loop over all the particles and 
+        # compare the origin of each
+        # with the queried starting position
+        for k in range(num_particles):
+            particle = self.Particles[k];
+
+            # Particle origin
+            particle_origin = particle.Position.Origin;
+
+            # Check if the input location corresponds 
+            # to the particle origin
+            if y0 == particle_origin:
+                x_new = particle.Position.Current.X;
+                y_new = particle.Position.Current.Y;
+                z_new = particle.Position.Current.Z;
+                durations_new = particle.Duration;
+    
+                # Append to list
+                x.append(x_new);
+                y.append(y_new);
+                z.append(z_new);
+                durations.append(durations_new);
+    
+        # Now sort them by age
+        xs = [k for (durations, k) in sorted(zip(durations, x))];
+        ys = [k for (durations, k) in sorted(zip(durations, y))];
+        zs = [k for (durations, k) in sorted(zip(durations, z))];
+        ds = sorted(durations);
+
+        # Return the coordinates and durations (the ages)
+        # of the points on the streakline, sorted by duration.
+        return xs, ys, zs, ds
+            
+                
                 
     # Remove dead particles
     def RemoveDead(self):
@@ -176,7 +260,7 @@ class ParticleField:
         for k in range(num_particles):
             self.Particles[k].Age(amount);
                       
- # This class represents an individal particle.           
+# This class represents an individal particle.           
 class Particle:
     def __init__(self, x = 0.0, y = 0.0, z = 0.0, u = 0.0, v = 0.0, w = 0.0, duration = 0):
         
@@ -260,7 +344,7 @@ class Particle:
             
             # Return the Boolean results
             return x_in, y_in, z_in;
-      
+    
     # Kill particles
     def Kill(self):
         self.Alive = False;       
@@ -271,7 +355,6 @@ class Particle:
     def Age(self, amount = 1):
         # Age the particle
         self.Duration += amount;
-        
         
         
         

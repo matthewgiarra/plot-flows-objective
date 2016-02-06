@@ -2,9 +2,6 @@
 # Numpy for array operations, etc.
 # import numpy as np
 
-# Plotting
-import matplotlib.pyplot as plt
-
 # Tools for python iterables
 import itertools
 
@@ -16,6 +13,9 @@ from .particles import *
 
 # Time
 import time
+
+# plotting
+import matplotlib.pyplot as plt
 
 # This class represents parameters for a simulation
 class Parameters:
@@ -73,12 +73,6 @@ class Simulation:
             x = y0[0];
             y = y0[1];
             z = y0[2];
-
-            # pdb.set_trace();
-            
-            # Initial positions of the particles
-            self.InitialPositions = CartesianCoordinate(x, y, z);
-
             # Create a particle field
             field = ParticleField(x, y, z);
             
@@ -123,7 +117,7 @@ class Simulation:
                 self.Step();
                 
                 # Get a streakline
-                x_streak, y_streak, z_streak, d_streak = self.GetStreaklines();
+                x_streak, y_streak, z_streak, d_streak = self.ParticleField.GetStreaklines();
                 
                 # Number of streaklines
                 n_streaks = len(x_streak);
@@ -317,13 +311,13 @@ class Simulation:
     def InjectStreaklines(self):
         
         # Number of streakline starting points.
-        num_streaklines = len(self.InitialPositions.X);
+        num_streaklines = len(self.ParticleField.InitialPositions.X);
         
         # Get the coordinates of all of the
         # streakline starting points.
-        x_init = self.InitialPositions.X;
-        y_init = self.InitialPositions.Y;
-        z_init = self.InitialPositions.Z;
+        x_init = self.ParticleField.InitialPositions.X;
+        y_init = self.ParticleField.InitialPositions.Y;
+        z_init = self.ParticleField.InitialPositions.Z;
         
         # Loop over the injection points
         for n in range(num_streaklines):
@@ -333,7 +327,7 @@ class Simulation:
             y0 = (x_init[n], y_init[n], z_init[n]);
             
             # Extract the streakline
-            xs, ys, zs, ds = self.GetStreakline(y0);
+            xs, ys, zs, ds = self.ParticleField.GetStreakline(y0);
         
             # Components of the vector from the origin
             dx = xs[0] - x_init[n];
@@ -348,82 +342,3 @@ class Simulation:
             if dr > self.Parameters.NewParticleDistance:
                 self.ParticleField.CreateParticles([x_init[n],], [y_init[n],], [z_init[n],]);
     
-    # This function gets all of the streaklines
-    def GetStreaklines(self):
-        # Number of starting particles
-        num_starting_points = len(self.InitialPositions.X);
-        
-        # Initialize vectors
-        x = [];
-        y = [];
-        z = [];
-        durations = [];
-        
-        # Loop over all the starting points
-        for k in range(num_starting_points):
-            
-            # Get positions
-            x0 = self.InitialPositions.X[k];
-            y0 = self.InitialPositions.Y[k];
-            z0 = self.InitialPositions.Z[k];
-            
-            # Get a single streakline
-            x_streak, y_streak, z_streak, d_streak = self.GetStreakline(y0 = (x0, y0, z0));
-            
-            # Append the streaklines
-            x.append(x_streak);
-            y.append(y_streak);
-            z.append(z_streak);
-            durations.append(d_streak);
-            
-        # Return the list
-        return x, y, z, durations
-            
-    # This function gets the coordinates of all of the
-    # particles that started at a certain point, 
-    # i.e., a streakline.  
-    def GetStreakline(self, y0 = (0, 0, 0)):
-        # Read the number of particles
-        
-        # Number of particles
-        num_particles = self.ParticleField.Count;
-        
-        # Create vectors for the coordinates
-        x = [];
-        y = [];
-        z = [];
-        durations = [];
-
-        # Loop over all the particles and 
-        # compare the origin of each
-        # with the queried starting position
-        for k in range(num_particles):
-            particle = self.ParticleField.Particles[k];
-            
-            # Particle origin
-            particle_origin = particle.Position.Origin;
-            
-            # Check if the input location corresponds 
-            # to the particle origin
-            if y0 == particle_origin:
-                x_new = particle.Position.Current.X;
-                y_new = particle.Position.Current.Y;
-                z_new = particle.Position.Current.Z;
-                durations_new = particle.Duration;
-                
-                # Append to list
-                x.append(x_new);
-                y.append(y_new);
-                z.append(z_new);
-                durations.append(durations_new);
-                
-        # Now sort them by age
-        xs = [k for (durations, k) in sorted(zip(durations, x))];
-        ys = [k for (durations, k) in sorted(zip(durations, y))];
-        zs = [k for (durations, k) in sorted(zip(durations, z))];
-        ds = sorted(durations);
-        
-        # Return the coordinates and durations (the ages)
-        # of the points on the streakline, sorted by duration.
-        return xs, ys, zs, ds
-        
