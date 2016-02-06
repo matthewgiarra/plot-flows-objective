@@ -16,6 +16,7 @@ import time
 
 # plotting
 import matplotlib.pyplot as plt
+from .plots import *
 
 # This class represents parameters for a simulation
 class Parameters:
@@ -116,33 +117,18 @@ class Simulation:
                 # Proceed with the next time step
                 self.Step();
                 
-                # Get a streakline
-                x_streak, y_streak, z_streak, d_streak = self.ParticleField.GetStreaklines();
+                # Clear axes
+                ax.clear();
                 
-                # Number of streaklines
-                n_streaks = len(x_streak);
-            
-                # Make the plots
-                if make_plots:
-                    # xplot, yplot, zplot = self.ParticleField.GetCoordinates();
-                    # line1.set_xdata(xplot);
-                    # line1.set_ydata(yplot);
-                    # line1.set_xdata(x_streak[0]);
-                    # line1.set_ydata(y_streak[0]);
-                    ax.clear();
-                    for n in range(n_streaks):
-
-                        # Number of points in this streakline
-                        npoints = len(x_streak[n]);
-
-                        # Plot this streak line
-                        ax.plot(x_streak[n], y_streak[n], '.');
-                    
-                    # pdb.set_trace();
-                    ax.set_xlim(xd);
-                    ax.set_ylim([-2, 2]);
-                    fig.canvas.draw();
-                    time.sleep(0.01)
+                # Check streaklines plot
+                if "streak" in self.Parameters.PlotType:
+                    StreakPlot(ax, ParticleField = self.ParticleField)
+                
+                # pdb.set_trace();
+                ax.set_xlim(xd);
+                ax.set_ylim([-2, 2]);
+                fig.canvas.draw();
+                time.sleep(0.01)
         except KeyboardInterrupt:
             pass
     
