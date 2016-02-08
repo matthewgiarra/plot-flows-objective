@@ -1,7 +1,15 @@
 # Plotting
+import matplotlib as mpl
+
+# Select the graphics back end
+# Apparently this has to happen 
+# before importing pyplot.
+mpl.use('TkAgg');
+
+# Import pyplot
 import matplotlib.pyplot as plt
-# import numpy as np
-# from scipy import interpolate
+
+
 
 # This function plots streaklines.
 def StreakPlot(ax, ParticleField = None):

@@ -104,6 +104,10 @@ class Simulation:
                         
     # Run the simulation
     def Run(self, make_plots = True):
+        """
+
+        :rtype: object
+        """
         current_time = self.Time.Current;
         stop_time = self.Time.Stop;
         
