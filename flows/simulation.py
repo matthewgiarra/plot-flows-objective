@@ -145,7 +145,7 @@ class Simulation:
                 ax.set_xlim(xd);
                 ax.set_ylim([-2, 2]);
                 fig.canvas.draw();
-                time.sleep(0.00001)
+                time.sleep(0)
         except KeyboardInterrupt:
             pass
     
@@ -177,10 +177,13 @@ class Simulation:
         num_alive = self.ParticleField.Count;
         
         # Print the number alive
-        print("Number alive: " + str(num_alive));
+        print("Live particles: " + str(num_alive));
         
         # Increment the time counter
         self.Time.Current += dt;
+        
+        # Print a blank line
+        print();
 
     # This method creates and destroys particles
     # between time steps.
