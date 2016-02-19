@@ -119,7 +119,8 @@ class Simulation:
         fig = plt.figure();
         ax = fig.add_subplot(111);
         line1, = ax.plot([], [], '-k');
-        fig.show();
+        #fig.show();
+       
         
         # Read the plot type
         plot_type = self.Parameters.PlotType.lower();
@@ -134,10 +135,12 @@ class Simulation:
                 
                 # Clear axes
                 ax.clear();
+                plt.hold(True)
                 
                 # Check streaklines plot
                 if "streak" in plot_type:
                     StreakPlot(ax, ParticleField = self.ParticleField);
+                    #x_streak, y_streak, z_streak, d_streak = self.ParticleField.GetStreaklines();
                     
                 elif "path" in plot_type:
                     PathlinePlot(ax, ParticleField = self.ParticleField);
@@ -145,14 +148,18 @@ class Simulation:
                 elif "time" in plot_type:
                     TimelinePlot(ax, ParticleField = self.ParticleField);
                 
-                # pdb.set_trace();
+                
                 ax.set_xlim(xd);
                 ax.set_ylim([-2, 2]);
                 fig.canvas.draw();
-                time.sleep(0)
+                time.sleep(0.05)
+                current_time = self.Time.Current;
+                plt.pause(0.0001)
+                
         except KeyboardInterrupt:
             pass
-    
+        
+       
     # This iterates the simulation        
     def Step(self):
         
@@ -168,6 +175,8 @@ class Simulation:
         # Starting time of the iteration
         t0 = self.Time.Current;
         dt = self.Time.Step;
+        #print(t0)
+        #print(dt)
         
         # Advect the particles
         self.ParticleField.Advect(flow_type = self.Parameters.FlowType,
