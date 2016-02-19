@@ -42,7 +42,7 @@ flow_type = "hama"
 NewParticleDistance = 0.1
 
 # Time stuff
-sim_time = [0, np.inf, 0.1]
+sim_time = [0, 50, 0.1]
 
 sim = flows.Simulation(x_domain=xd,
                        y_domain=yd,
