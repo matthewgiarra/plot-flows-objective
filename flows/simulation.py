@@ -170,7 +170,7 @@ class Simulation:
         self.ParticleField.Age();
         
         # Print
-        print("On iteration " + str(counter));
+        #print("On iteration " + str(counter));
         
         # Starting time of the iteration
         t0 = self.Time.Current;
@@ -190,13 +190,13 @@ class Simulation:
         num_alive = self.ParticleField.Count;
         
         # Print the number alive
-        print("Live particles: " + str(num_alive));
+        #print("Live particles: " + str(num_alive));
         
         # Increment the time counter
         self.Time.Current += dt;
         
         # Print a blank line
-        print();
+        #print();
 
     # This method creates and destroys particles
     # between time steps.
