@@ -20,23 +20,27 @@ z = np.zeros(len(x))
 # Make them a vector
 y0 = [x, y, z]
 
-a = 0.05
-alpha = 1
-c = 1
+# a = 0.05
+# alpha = 1
+# c = 1
+
+u_max = 2
+R_max = 3
 
 # Domain
 xd = (-1.1, 24.0)
-yd = (-5, 5)
+yd = (-3, 3)
 zd = (-1, 1)
 
 # Hama flow constants
-extra_args = [a, alpha, c]
+# extra_args = [a, alpha, c]
+extra_args = [u_max, R_max]
 
 # Plot type
 plot_type = "streak"
 
 # Flow type
-flow_type = "hama"
+flow_type = "cpipe"
 
 # New particle distance
 NewParticleDistance = 0.1

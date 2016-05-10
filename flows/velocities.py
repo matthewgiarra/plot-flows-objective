@@ -61,25 +61,34 @@ def HamaVelocity(xy, t, extra_args):
     v_vel = v_o + v_prime;
     
     # Append into 1D
-    vels = np.append(u_vel, v_vel);
+    vels = np.append(u_vel, v_vel)
     
     # Concatonate into a list
-    return vels;
+    return vels
     
-def UniformVelocity(xy, t, extra_args):
+def cpipe(xy, t, extra_args):
+
+    # Max velocity
+    umax = extra_args[0]
+    
+    # Pipe radius
+    R_max = extra_args[1]
     
     # Parse the input
-    x, y = Parse_Vector_2d(xy);
+    x, y = Parse_Vector_2d(xy)
     
-    num_points = len(x);
+    # Number of points
+    num_points = (x.shape)[0]
     
-    # Velocity
-    u_o = extra_args * np.ones((num_points,), dtype = np.float);
-    v_o = 0 * np.ones((num_points,), dtype = np.float);
+    # Mean horizontal and vertical velocities
+    u_vel = umax * (1 - np.power(y,2) / np.power(R_max,2))
     
-    u_vel = u_o;
-    v_vel = v_o;
+    # Need to make this an array so that v_o has the 
+    # same number of points as u_o
+    v_vel = np.zeros(num_points)
     
-    vels = np.append(u_vel, v_vel);
+    # Append into 1D
+    vels = np.append(u_vel, v_vel)
     
-    return vels;
+    # Concatonate into a list
+    return vels

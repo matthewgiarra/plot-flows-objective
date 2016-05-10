@@ -1,6 +1,7 @@
 # import numpy as np
 from .velocities import *
 from scipy.integrate import odeint
+import pdb
 
 # Velocity vector class
 class Velocity:
@@ -87,7 +88,10 @@ class ParticleField:
             # Choose between fields
             if "hama" in flow_type.lower():
                 xy = (odeint(HamaVelocity, y0 = xy0, t = t, args = (extra_args,)))[-1, :];
-            
+                
+            elif "cpipe" in flow_type.lower():
+                xy = (odeint(cpipe, y0 = xy0, t = t, args = (extra_args,)))[-1, :];
+                
             # Extract the new positions
             x_new, y_new = Parse_Vector_2d(xy);
             
