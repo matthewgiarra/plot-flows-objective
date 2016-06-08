@@ -1,7 +1,6 @@
 # import numpy as np
 from .velocities import *
 from scipy.integrate import odeint
-import pdb
 
 # Velocity vector class
 class Velocity:
@@ -84,20 +83,86 @@ class ParticleField:
             # velocity functions
             xy0 = np.array(x0 + y0);
             # xy0 = np.array([x0, y0]);
+            print(xy0)
     
-            # Choose between fields
+            # Choose between fields 
+			# Time vector has incorrect shape
             if "hama" in flow_type.lower():
-                xy = (odeint(HamaVelocity, y0 = xy0, t = t, args = (extra_args,)))[-1, :];
-                
+                xy = (odeint(HamaVelocity, y0 = xy0, t = t, args = (extra_args,)))[-1, :]
+                uv = HamaVelocity(xy0, t, extra_args)
             elif "cpipe" in flow_type.lower():
-                xy = (odeint(cpipe, y0 = xy0, t = t, args = (extra_args,)))[-1, :];
-                
-            # Extract the new positions
+                xy = (odeint(CircularPipe, y0 = xy0, t = t, args = (extra_args,)))[-1, :]
+                uv = CircularPipe(xy0, t, extra_args)
+            elif "womersley" in flow_type.lower():
+                xy = (odeint(Womersley, y0 = xy0, t = t, args = (extra_args,)))[-1, :]
+                uv = Womersley(xy0, t, extra_args)
+            elif "blasius" in flow_type.lower():
+                xy = (odeint(Blasius, y0 = xy0, t = t, args = (extra_args,)))[-1, :]
+                uv = Blasius(xy0, t, extra_args)
+            elif "oscillatingplane" in flow_type.lower():
+                xy = (odeint(OscillatingPlane, y0 = xy0, t = t, args = (extra_args,)))[-1, :]
+                uv = OscillatingPlane(xy0, t, extra_args)
+			
+			# Extract the new positions
             x_new, y_new = Parse_Vector_2d(xy);
             
+			# Extract the new velocities
+            u_new, v_new = Parse_Vector_2d(uv);
+			
+			# Set new velocities
+            self.SetVelocity(u = u_new, v = v_new);
+	        
             # Set the new coordinates
             self.SetCoordinates(x = x_new, y = y_new);
-            
+    
+	
+    # This function sets the velocities of the vectorfield
+    def SetVelocity(self, u = None, v = None, w = None):
+	                    
+						
+		# Read Number of Particles
+        num_particles = self.Count;
+
+        # Loop over all the points in vectorfield
+        for k in range(num_particles):
+            particle = self.Particles[k];
+		
+            # Extract the new velocities
+            particle.Velocity.U = u;
+            particle.Velocity.V = v;
+            particle.Velocity.W = w;
+	
+	# This function gets the velocities of the vectorfield
+    def GetVelocity(self):
+        # Initialize vectors
+        u = [];
+        v = [];
+        w = [];
+        x = [];
+        y = [];
+        z = [];
+        
+		
+		# Read Number of Particles
+        num_particles = self.Count;
+
+        # Loop over all the points in vectorfield
+        for k in range(num_particles):
+            particle = self.Particles[k];
+			
+			# Get position of one point
+            x.append(particle.Position.Current.X)
+            y.append(particle.Position.Current.Y)
+            z.append(particle.Position.Current.Z)
+			
+			# Get velocity of one point
+            u = particle.Velocity.U
+            v = particle.Velocity.V
+            w = particle.Velocity.W
+                       
+
+        return x, y, z, u, v, w;
+	
     # This function gets all of the streaklines
     def GetStreaklines(self):
         # Number of starting particles
@@ -317,6 +382,81 @@ class Particle:
                 
                 # New velocity
                 uv = HamaVelocity(xy0, t, extra_args)
+
+                # Extract the new velocities
+                self.Velocity.U = uv[0];
+                self.Velocity.V = uv[1];
+				
+            if "cpipe" in flow_type.lower():
+                
+                # New position
+                try:
+                    xy = (odeint(CircularPipe, y0 = xy0, t = t, args = (extra_args,)))[1, :];
+                except:
+                    print("Error integrating!");
+                    
+                # Extract the new positions
+                self.Position.Current.X = xy[0];
+                self.Position.Current.Y = xy[1];
+                
+                # New velocity
+                uv = CircularPipe(xy0, t, extra_args)
+
+                # Extract the new velocities
+                self.Velocity.U = uv[0];
+                self.Velocity.V = uv[1];
+            
+            if "womersley" in flow_type.lower():
+                
+                # New position
+                try:
+                    xy = (odeint(Womersley, y0 = xy0, t = t, args = (extra_args,)))[1, :];
+                except:
+                    print("Error integrating!");
+                    
+                # Extract the new positions
+                self.Position.Current.X = xy[0];
+                self.Position.Current.Y = xy[1];
+                
+                # New velocity
+                uv = Womersley(xy0, t, extra_args)
+
+                # Extract the new velocities
+                self.Velocity.U = uv[0];
+                self.Velocity.V = uv[1];
+            
+            if "blasius" in flow_type.lower():
+			
+			    # New position
+                try:
+                    xy = (odeint(Blasius, y0 = xy0, t = t, args = (extra_args,)))[1, :];
+                except:
+                    print("Error integrating!");
+                    
+                # Extract the new positions
+                self.Position.Current.X = xy[0];
+                self.Position.Current.Y = xy[1];
+                
+                # New velocity
+                uv = Blasius(xy0, t, extra_args)
+
+                # Extract the new velocities
+                self.Velocity.U = uv[0];
+                self.Velocity.V = uv[1];
+            if "oscillatingplane" in flow_type.lower():
+                
+                # New position
+                try:
+                    xy = (odeint(OscillatingPlane, y0 = xy0, t = t, args = (extra_args,)))[1, :];
+                except:
+                    print("Error integrating!");
+                    
+                # Extract the new positions
+                self.Position.Current.X = xy[0];
+                self.Position.Current.Y = xy[1];
+                
+                # New velocity
+                uv = OscillatingPlane(xy0, t, extra_args)
 
                 # Extract the new velocities
                 self.Velocity.U = uv[0];
