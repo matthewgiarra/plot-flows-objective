@@ -1,4 +1,3 @@
-
 # Numpy for array operations, etc.
 # import numpy as np
 
@@ -17,6 +16,7 @@ import time
 # plotting
 import matplotlib.pyplot as plt
 from .plots import *
+from mpl_toolkits.mplot3d import Axes3D
 
 # This class represents parameters for a simulation
 class Parameters:
@@ -42,7 +42,11 @@ class Parameters:
         if "path" in plot_type.lower():
             self.PeriodicDomain = False;
             self.RegenerateParticles = False;
-            
+   
+        # Vector field plot
+        if "vector" in plot_type.lower():
+            self.PeriodicDomain = False;
+            self.RegenerateParticles = False;			
                       
 # Extents of a domain
 class Domain:
@@ -116,9 +120,9 @@ class Simulation:
         yd = list(self.Domain.Y);
         
         # if make_plots:
-        fig = plt.figure();
-        ax = fig.add_subplot(111);
-        line1, = ax.plot([], [], '-k');
+        #fig = plt.figure();
+        #ax = fig.add_subplot(projection = '3d');
+        #line1, = ax.plot([], [], [], '-k');
         #fig.show();
        
         
@@ -148,6 +152,9 @@ class Simulation:
                 elif "time" in plot_type:
                     TimelinePlot(ax, ParticleField = self.ParticleField);
                 
+                elif "vector" in plot_type:
+                    VectorField(ax, ParticleField = self.ParticleField);
+				
                 
                 ax.set_xlim(xd);
                 ax.set_ylim([-2, 2]);
