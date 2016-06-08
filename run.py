@@ -20,27 +20,83 @@ z = np.zeros(len(x))
 # Make them a vector
 y0 = [x, y, z]
 
-# a = 0.05
-# alpha = 1
-# c = 1
-
-u_max = 2
-R_max = 3
-
-# Domain
-xd = (-1.1, 24.0)
-yd = (-3, 3)
-zd = (-1, 1)
-
-# Hama flow constants
-# extra_args = [a, alpha, c]
-extra_args = [u_max, R_max]
-
-# Plot type
-plot_type = "streak"
-
 # Flow type
 flow_type = "cpipe"
+
+# Initialize parameters for each flow type
+if flow_type == "hama":
+	# Domain
+	xd = (-1.1, 24)
+	yd = (-3, 3)
+	zd = (-1, 1)
+
+    # Hama flow constants
+	a = 0.05
+	alpha = 1
+	c = 1
+	extra_args = [a, alpha, c]
+elif flow_type == "cpipe":
+	# Domain
+	xd = (-1.1, 100)
+	yd = (-3, 3)
+	zd = (-1, 1)
+	
+	#CircularPipe flow constants
+	#Maximum Velocity
+	u_max = 5
+	
+	#Radius
+	R = 2
+	
+	extra_args = [u_max, R]
+elif flow_type == "womersley":
+	# Domain
+	xd = (-5, 5)
+	yd = (-3, 3)
+	zd = (-1, 1)
+
+	#Womersley flow constants
+	
+	#Womersley Number
+	Wn = 0.1
+	
+	#Density
+	Rho = 3
+
+	# Complex Number
+	c = 12 + 30j
+	
+	#Radius
+	R = 1
+	
+	#Dynamic Viscosity
+	Mu = 1
+		
+	#Frequency 
+	f = 7
+	
+	extra_args = [Wn, Rho, c, R, Mu, f]
+elif flow_type == "oscillatingplane":
+
+    # Domain
+    xd = (-15, 15)
+    yd = (-3, 3)
+    zd = (-1, 1)
+	
+    # Kinetic Viscosity
+    Nu = 1
+	
+	# Initial Velocity
+    U_0 = 5
+ 
+	# Frequency
+    f = 4 
+	
+    extra_args = [f, Nu, U_0]
+	
+	
+# Plot type
+plot_type = "streak"
 
 # New particle distance
 NewParticleDistance = 0.1
