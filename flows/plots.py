@@ -3,6 +3,7 @@ import matplotlib as mpl
 import numpy as np
 from .velocities import *
 from .particles import *
+import pdb
 # Select the graphics back end
 # Apparently this has to happen 
 # before importing pyplot.
@@ -16,41 +17,38 @@ fig = plt.figure()
 ax = fig.add_subplot(111, projection = '3d')
 
 
+
 # This function plots the vector field of velocities
 # Todo: Convert list to array
 # Get Correct velocity
-def VectorField(ax, ParticleField = None):
-    if ParticleField is not None:
+def VectorField(ax, VelocityField = None):
+    if VelocityField is not None:
 	
         # Get all velocities
-        x, y, z, u, v, w = ParticleField.GetVelocity()
-       
+        x, y, z, u, v, w = VelocityField.GetVelocity()
+        #print(x.shape)
+        #print(y.shape)
+        #print(z.shape)
+        #print(u.shape)
+        #print(v.shape)
+        #print(w.shape)
 		
-        x_new = np.asarray(x)
-        y_new = np.asarray(y)
-        z_new = np.zeros(x_new.shape[0])
-		
-        u_new = np.asarray(u)
-        v_new = np.asarray(v)
-        w_new = np.zeros(u_new.shape[0])
-        print(x_new.shape[0])
-        print(y_new.shape[0])
-        #print(z)
-        print(u_new.shape[0])
-        print(v_new.shape[0])
-        #print(w)
+                
+        #pdb.set_trace()
         # Meshgrid the vectors
-        x_rec, y_rec, z_rec, u_rec, v_rec, w_rec = np.meshgrid(x_new, y_new,z_new, u_new, v_new, w_new)
-		
-        print(x_rec.shape[0])
-        print(y_rec.shape[0])
-		
-        print(u_rec.shape[0])
-        print(v_rec.shape[0])
+        x_rec, y_rec, z_rec = np.meshgrid(x, y, z)
+        u_rec, v_rec, w_rec = np.meshgrid(u, v, w)
+        #pdb.set_trace()
 		
         # Plot Vector field of velocity
-        ax.quiver(x_rec, y_rec, z_rec, u_rec, v_rec, w_rec, length = 0.01)
-
+        ax.quiver(x_rec, y_rec, z_rec, u_rec, v_rec, w_rec, length = 0.5)
+        
+		# Set axis labels
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+		
+		# Show photo
         plt.show()
 
 
