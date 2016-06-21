@@ -1,6 +1,7 @@
 import numpy as np
 import pdb
 import scipy
+# from pycse import bvp
 
 # This function parses a vector
 # of dimensions [2n x 1] into 
@@ -22,26 +23,9 @@ def Parse_Vector_3d(xyz):
 	x = xyz[0 : breakpoint]
 	y = xyz[breakpoint : 2 * breakpoint]
 	z = zyz[2 * breakpoint : 3 * breakpoint]
+	
+	return x, y, z;
 '''
-
-# Poiseuille velocity function
-# Not sure if this is working right now.
-def PoiseuilleVelocity(xy, t, args1):
-
-    # Parameters
-    amp = args1[0];
-    freq = args1[1];
-    
-    # Coordinates
-    x = xy[0];
-    y = xy[1];
-    
-    # Calculate velocities
-    u_vel = amp * (1 - y**2);
-    v_vel = amp * np.sin(2 * np.pi * (freq * x  + t));
-    
-    # Return u and v
-    return [u_vel.astype(float), v_vel.astype(float)];
  
 # Hama velocity function   
 def HamaVelocity(xy, t, extra_args):
@@ -80,38 +64,44 @@ def HamaVelocity(xy, t, extra_args):
     # Concatonate into a list
     return vels;
 
+# UniformVelocity function
 def UniformVelocity(xy, t, extra_args):
     
     # Parse the input
     x, y = Parse_Vector_2d(xy);
     
-    num_points = len(x);
-    
+	# a represents u_o/U
+    a = extra_args[0]
+	
+	# define U
+    U = 1
+	
     # Velocity
-    u_o = extra_args * np.ones((num_points,), dtype = np.float);
-    v_o = 0 * np.ones((num_points,), dtype = np.float);
-    
-    u_vel = u_o;
-    v_vel = v_o;
-    
-    vels = np.append(u_vel, v_vel);
+    u_o = np.full((1, x.shape[0]), a * U);
+    v_o = np.zeros(y.shape[0]);
+        
+    vels = np.append(u_o, v_o);
     
     return vels;
 
-# CircularPipe velocity function  	
-def CircularPipe(xy, t, extra_args):
+# Poiseuille velocity function (Laminar)	
+def PoiseuilleVelocity(xy, t, extra_args):
 
     # Parse the input
 	x, y = Parse_Vector_2d(xy)
 	
+	# Velocity Constant
+	a = extra_args[0]
+	
+	
 	# Maximum Velocity
-	umax = extra_args[0]
+	umax = 1
 	
 	# Pipe radius
-	R = extra_args[1]
+	R = 3
 	
     # Mean horizontal velocity and vertical velocities
-	u_vel = umax * (1 - np.power(y, 2) / np.power(R, 2))
+	u_vel = umax * a * (1 - (np.power(y, 2) / np.power(R, 2)))
 	v_vel = np.zeros((y.shape[0]))
 	
 	#pdb.set_trace();
@@ -128,19 +118,22 @@ def Womersley(xy, t, extra_args):
 	x, y = Parse_Vector_2d(xy)
 	
 	#Radius
-	R = extra_args[3]
+	#R = extra_args[3]
+	R = 1
 	
 	#Frequency
-	Omega = extra_args[5]
+	Omega = extra_args[2]
 	
 	#Density
-	Rho = extra_args[1]
+	#Rho = extra_args[1]
+	Rho = 1
 	
 	#Dynamic Viscosity
-	Mu = extra_args[4]
+	#Mu = extra_args[4]
+	Mu = 1
 	
 	#Complex Number
-	A = extra_args[2]
+	A = extra_args[1]
 		
 	#Kinematic Viscosity
 	#Nu = Mu / Rho
@@ -148,14 +141,14 @@ def Womersley(xy, t, extra_args):
 	#pdb.set_trace();
 	
 	#Womersley Number
-	Alpha = extra_args[0]
+	Wm = extra_args[0]
 	
 	#Parts of Womersley Flow Solution
-	v1 = y * np.power(1j,3/2) * Alpha / R 
-	v2 = np.power(1j,3/2) * Alpha 
+	v1 = y * np.power(1j,3/2) * Wm / R 
+	v2 = np.power(1j,3/2) * Wm 
 	
 	# Mean horizontal velocity and vertical velocities
-	u_vel = (- A * np.power(R, 2) / 1j / Mu / np.power(Alpha, 2) * (1 - scipy.special.jv(0,v1)/ scipy.special.jv(0,v2)) * np.exp(1j * Omega * t)).real
+	u_vel = (- A * np.power(R, 2) / 1j / Mu / np.power(Wm, 2) * (1 - scipy.special.jv(0,v1)/ scipy.special.jv(0,v2)) * np.exp(1j * Omega * t)).real
 	v_vel = np.zeros((y.shape[0]))
 	
 	#pdb.set_trace();
@@ -166,11 +159,27 @@ def Womersley(xy, t, extra_args):
 	
 '''
 # Blasius Boundary Layer
-# To be Finished
 def Blasius(xy, t, extra_args):
+    
+    def odefun(F, x):
+        f1, f2, f3 = F
+        return [f2, f3, -0.5 * f1 * f3]
+    def bcfun(Fa, Fb):
+        return [Fa[0], Fa[1], 1.0 - Fb[1]]
+    
+    eta = np.linspace(0, 6, 100)
+    f1init = eta
+    f2init = np.exp(-eta)
+    f3init = np.exp(-eta)
+	
+    Finit = np.vstack([f1init, f2init, f3init])
+    sol = bvp(odefun, bcfun, eta, Finit)
+	
+	
+	
     x, y = Parse_Vector_2d(xy)
 	
-    u_vel = 
+    u_vel = U * 
     v_vel = 
 	
     vels = np.append(u_vel, v_vel)
@@ -186,10 +195,12 @@ def OscillatingPlane(xy, t, extra_args):
     Omega = extra_args[0]
 	
 	#Viscosity
-    Nu = extra_args[1]
+    #Nu = extra_args[1]
+    Nu = 1
 	
 	#Initial Velocity
-    u_o = extra_args[2]
+    #u_o = extra_args[2]
+    u_o = 1
 	
 	#Non-dimentional Convert
     Y = y / np.power((Nu/Omega),1/2)
