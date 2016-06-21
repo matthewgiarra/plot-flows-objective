@@ -21,9 +21,8 @@ z = np.zeros(len(x))
 y0 = [x, y, z]
 
 # Flow type
-flow_type = "cpipe"
+flow_type = "womersley"
 
-# Initialize parameters for each flow type
 if flow_type == "hama":
 	# Domain
 	xd = (-1.1, 24)
@@ -35,20 +34,26 @@ if flow_type == "hama":
 	alpha = 1
 	c = 1
 	extra_args = [a, alpha, c]
-elif flow_type == "cpipe":
+elif flow_type == "poiseuille":
 	# Domain
-	xd = (-1.1, 100)
+	xd = (-1.1, 10)
 	yd = (-3, 3)
 	zd = (-1, 1)
 	
-	#CircularPipe flow constants
-	#Maximum Velocity
-	u_max = 5
+	# Velocity Constant
+	a = 5
 	
-	#Radius
-	R = 2
+	extra_args = [a]
+elif flow_type == "uniform":
+	# Domain
+	xd = (-1.1, 10)
+	yd = (-3, 3)
+	zd = (-1, 1)
 	
-	extra_args = [u_max, R]
+	# Velocity Constant
+	a = 5
+
+	extra_args = [a]
 elif flow_type == "womersley":
 	# Domain
 	xd = (-5, 5)
@@ -60,22 +65,13 @@ elif flow_type == "womersley":
 	#Womersley Number
 	Wn = 0.1
 	
-	#Density
-	Rho = 3
-
 	# Complex Number
 	c = 12 + 30j
-	
-	#Radius
-	R = 1
-	
-	#Dynamic Viscosity
-	Mu = 1
-		
+				
 	#Frequency 
 	f = 7
 	
-	extra_args = [Wn, Rho, c, R, Mu, f]
+	extra_args = [Wn, c, f]
 elif flow_type == "oscillatingplane":
 
     # Domain
@@ -83,17 +79,11 @@ elif flow_type == "oscillatingplane":
     yd = (-3, 3)
     zd = (-1, 1)
 	
-    # Kinetic Viscosity
-    Nu = 1
-	
-	# Initial Velocity
-    U_0 = 5
- 
 	# Frequency
     f = 4 
 	
-    extra_args = [f, Nu, U_0]
-	
+    extra_args = [f]
+
 	
 # Plot type
 plot_type = "streak"
