@@ -20,27 +20,73 @@ z = np.zeros(len(x))
 # Make them a vector
 y0 = [x, y, z]
 
-# a = 0.05
-# alpha = 1
-# c = 1
+# Flow type
+flow_type = "womersley"
 
-u_max = 2
-R_max = 3
+if flow_type == "hama":
+	# Domain
+	xd = (-1.1, 24)
+	yd = (-3, 3)
+	zd = (-1, 1)
 
-# Domain
-xd = (-1.1, 24.0)
-yd = (-3, 3)
-zd = (-1, 1)
+    # Hama flow constants
+	a = 0.05
+	alpha = 1
+	c = 1
+	extra_args = [a, alpha, c]
+elif flow_type == "poiseuille":
+	# Domain
+	xd = (-1.1, 10)
+	yd = (-3, 3)
+	zd = (-1, 1)
+	
+	# Velocity Constant
+	a = 5
+	
+	extra_args = [a]
+elif flow_type == "uniform":
+	# Domain
+	xd = (-1.1, 10)
+	yd = (-3, 3)
+	zd = (-1, 1)
+	
+	# Velocity Constant
+	a = 5
 
-# Hama flow constants
-# extra_args = [a, alpha, c]
-extra_args = [u_max, R_max]
+	extra_args = [a]
+elif flow_type == "womersley":
+	# Domain
+	xd = (-5, 5)
+	yd = (-3, 3)
+	zd = (-1, 1)
 
+	#Womersley flow constants
+	
+	#Womersley Number
+	Wn = 0.1
+	
+	# Complex Number
+	c = 12 + 30j
+				
+	#Frequency 
+	f = 7
+	
+	extra_args = [Wn, c, f]
+elif flow_type == "oscillatingplane":
+
+    # Domain
+    xd = (-15, 15)
+    yd = (-3, 3)
+    zd = (-1, 1)
+	
+	# Frequency
+    f = 4 
+	
+    extra_args = [f]
+
+	
 # Plot type
 plot_type = "streak"
-
-# Flow type
-flow_type = "cpipe"
 
 # New particle distance
 NewParticleDistance = 0.1
